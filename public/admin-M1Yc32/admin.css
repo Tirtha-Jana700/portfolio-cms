@@ -1,0 +1,63 @@
+body { min-height: 100vh; }
+
+.admin-shell { display: none; }
+.admin-shell.active { display: block; }
+
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.login-card { width: 100%; max-width: 360px; text-align: center; }
+.login-card h1 { font-size: 1.3rem; margin: 0 0 4px; }
+.login-card p { color: var(--text-soft); font-size: 0.9rem; margin: 0 0 24px; }
+.login-error { color: var(--danger); font-size: 0.85rem; min-height: 18px; margin-top: 10px; }
+
+.admin-topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--bg);
+  padding: 14px 0;
+}
+.admin-topbar-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg); border-radius: var(--radius-pill);
+  box-shadow: var(--raised-sm); padding: 10px 10px 10px 22px;
+}
+.admin-topbar-inner strong { font-size: 0.95rem; }
+
+.admin-tabs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin: 24px 0 28px;
+}
+.admin-tab {
+  background: var(--bg); border: none; border-radius: var(--radius-pill);
+  box-shadow: var(--raised-sm); padding: 10px 20px; font-weight: 600;
+  font-size: 0.88rem; color: var(--text-soft); cursor: pointer;
+}
+.admin-tab.active { box-shadow: var(--pressed-sm); color: var(--accent); }
+
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+
+.item-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 28px; }
+.item-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 20px;
+}
+.item-row .item-main { min-width: 0; }
+.item-row .item-title { font-weight: 700; }
+.item-row .item-sub { color: var(--text-faint); font-size: 0.82rem; }
+.item-row .item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.item-row .item-actions .icon-btn { width: 38px; height: 38px; font-size: 0.9rem; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.form-grid .span-2 { grid-column: 1 / -1; }
+@media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+
+.form-actions { display: flex; gap: 10px; margin-top: 6px; }
+
+.save-note { font-size: 0.82rem; color: var(--success); margin-left: 10px; }
+.file-row { display: flex; gap: 10px; align-items: center; }
+.file-row input[type="file"] { box-shadow: none; padding: 0; width: auto; }

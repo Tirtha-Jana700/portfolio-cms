@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Portfolio</title>
+<meta name="description" content="Portfolio" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <div class="nav-brand" id="navBrand">Portfolio</div>
+    <button class="icon-btn nav-toggle" id="navToggle" aria-label="Menu">&#9776;</button>
+    <ul class="nav-links hidden" id="navLinks">
+      <li><a href="#about">About</a></li>
+      <li><a href="#skills">Skills</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#experience">Experience</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero container">
+  <div class="avatar-frame" id="avatarFrame">
+    <img id="avatarImg" src="" alt="" style="display:none" />
+  </div>
+  <h1 id="heroName">&nbsp;</h1>
+  <div class="title" id="heroTitle"></div>
+  <p class="tagline" id="heroTagline"></p>
+  <div class="hero-actions" id="heroActions"></div>
+  <div class="social-row" id="socialRow"></div>
+</header>
+
+<section id="about" class="hidden">
+  <div class="container">
+    <h2 class="section-title">About</h2>
+    <div class="card about-card">
+      <p id="aboutBio"></p>
+    </div>
+  </div>
+</section>
+
+<section id="skills" class="hidden">
+  <div class="container">
+    <h2 class="section-title">Skills</h2>
+    <p class="section-subtitle">What I work with day to day.</p>
+    <div class="skills-grid" id="skillsGrid"></div>
+  </div>
+</section>
+
+<section id="projects" class="hidden">
+  <div class="container">
+    <h2 class="section-title">Projects</h2>
+    <p class="section-subtitle">A few things I've built.</p>
+    <div class="projects-grid" id="projectsGrid"></div>
+  </div>
+</section>
+
+<section id="experience" class="hidden">
+  <div class="container">
+    <h2 class="section-title">Experience</h2>
+    <div class="timeline" id="timeline"></div>
+  </div>
+</section>
+
+<section id="contact" class="hidden">
+  <div class="container">
+    <h2 class="section-title">Get in touch</h2>
+    <div class="contact-grid" id="contactGrid"></div>
+  </div>
+</section>
+
+<footer>
+  <span id="footerText"></span>
+</footer>
+
+<script src="/js/main.js"></script>
+</body>
+</html>

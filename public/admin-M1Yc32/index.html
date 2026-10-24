@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<title>Admin</title>
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-wrap" id="loginWrap">
+  <div class="card login-card">
+    <h1>Admin</h1>
+    <p>Enter your password to manage the site.</p>
+    <form id="loginForm">
+      <div class="field">
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-accent" style="width:100%; justify-content:center;">Log in</button>
+      <div class="login-error" id="loginError"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="admin-shell" id="adminShell">
+  <div class="admin-topbar">
+    <div class="container admin-topbar-inner">
+      <strong>Site Admin</strong>
+      <button class="btn" id="logoutBtn">Log out</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="profile">Profile</button>
+      <button class="admin-tab" data-tab="skills">Skills</button>
+      <button class="admin-tab" data-tab="projects">Projects</button>
+      <button class="admin-tab" data-tab="experience">Experience</button>
+    </div>
+
+    <!-- Profile -->
+    <div class="admin-panel active" id="panel-profile">
+      <form id="profileForm" class="card">
+        <div class="form-grid">
+          <div class="field"><label>Full name</label><input name="full_name" /></div>
+          <div class="field"><label>Title</label><input name="title" placeholder="e.g. Web Developer" /></div>
+          <div class="field span-2"><label>Tagline</label><input name="tagline" placeholder="One line under your name" /></div>
+          <div class="field span-2"><label>Bio</label><textarea name="bio" rows="5"></textarea></div>
+
+          <div class="field">
+            <label>Avatar image URL</label>
+            <input name="avatar_url" placeholder="https://..." />
+            <div class="file-row" style="margin-top:8px;">
+              <input type="file" accept="image/*" data-upload-target="avatar_url" />
+            </div>
+          </div>
+          <div class="field"><label>Resume URL</label><input name="resume_url" placeholder="https://..." /></div>
+
+          <div class="field"><label>Email</label><input name="email" type="email" /></div>
+          <div class="field"><label>Phone</label><input name="phone" /></div>
+          <div class="field"><label>Location</label><input name="location" /></div>
+          <div class="field"><label>GitHub URL</label><input name="github_url" /></div>
+          <div class="field"><label>LinkedIn URL</label><input name="linkedin_url" /></div>
+          <div class="field"><label>Twitter / X URL</label><input name="twitter_url" /></div>
+          <div class="field"><label>Instagram URL</label><input name="instagram_url" /></div>
+          <div class="field"><label>YouTube URL</label><input name="youtube_url" /></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-accent">Save profile</button>
+          <span class="save-note hidden" id="profileSaved">Saved</span>
+        </div>
+      </form>
+    </div>
+
+    <!-- Skills -->
+    <div class="admin-panel" id="panel-skills">
+      <div class="item-list" id="skillsList"></div>
+      <form id="skillForm" class="card">
+        <input type="hidden" name="id" />
+        <div class="form-grid">
+          <div class="field"><label>Skill name</label><input name="name" required /></div>
+          <div class="field"><label>Category (optional)</label><input name="category" placeholder="e.g. Frontend" /></div>
+          <div class="field"><label>Level (0–100)</label><input name="level" type="number" min="0" max="100" value="80" /></div>
+          <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-accent">Add / Update skill</button>
+          <button type="button" class="btn" data-cancel-edit>Clear</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Projects -->
+    <div class="admin-panel" id="panel-projects">
+      <div class="item-list" id="projectsList"></div>
+      <form id="projectForm" class="card">
+        <input type="hidden" name="id" />
+        <div class="form-grid">
+          <div class="field span-2"><label>Title</label><input name="title" required /></div>
+          <div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
+          <div class="field span-2">
+            <label>Image URL</label>
+            <input name="image_url" placeholder="https://..." />
+            <div class="file-row" style="margin-top:8px;">
+              <input type="file" accept="image/*" data-upload-target="image_url" />
+            </div>
+          </div>
+          <div class="field span-2"><label>Tech stack (comma separated)</label><input name="tech_stack" placeholder="React, Flask, D1" /></div>
+          <div class="field"><label>Live URL</label><input name="live_url" /></div>
+          <div class="field"><label>Repo URL</label><input name="repo_url" /></div>
+          <div class="field"><label>Featured (1 or 0)</label><input name="featured" type="number" min="0" max="1" value="0" /></div>
+          <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-accent">Add / Update project</button>
+          <button type="button" class="btn" data-cancel-edit>Clear</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Experience -->
+    <div class="admin-panel" id="panel-experience">
+      <div class="item-list" id="experienceList"></div>
+      <form id="experienceForm" class="card">
+        <input type="hidden" name="id" />
+        <div class="form-grid">
+          <div class="field">
+            <label>Type</label>
+            <select name="type">
+              <option value="work">Work</option>
+              <option value="education">Education</option>
+            </select>
+          </div>
+          <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
+          <div class="field"><label>Role / Degree</label><input name="role" required /></div>
+          <div class="field"><label>Organization</label><input name="organization" /></div>
+          <div class="field"><label>Start date</label><input name="start_date" placeholder="e.g. 2023" /></div>
+          <div class="field"><label>End date</label><input name="end_date" placeholder="e.g. Present" /></div>
+          <div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-accent">Add / Update entry</button>
+          <button type="button" class="btn" data-cancel-edit>Clear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

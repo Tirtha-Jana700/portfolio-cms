@@ -179,6 +179,8 @@
       name ? `© ${year} ${name}` : `© ${year}`;
   }
 
+  // ---------- SEO: update <title> and meta tags once we know who this is ----------
+
   function setMeta(selectorAttr, name, content) {
     if (!content) return;
     let tag = document.querySelector(`meta[${selectorAttr}="${name}"]`);
@@ -209,6 +211,8 @@
       } catch (e) { /* ignore invalid URL */ }
     }
   }
+
+  // ---------- Intro splash screen ----------
 
   function runIntro(profile) {
     const introScreen = document.getElementById("introScreen");
@@ -243,6 +247,8 @@
     });
   }
 
+  // ---------- Boot ----------
+
   document.addEventListener("DOMContentLoaded", async () => {
     const data = await fetchPortfolio();
     const profile = (data && data.profile) || {};
@@ -259,4 +265,3 @@
     runIntro(profile);
   });
 })();
-

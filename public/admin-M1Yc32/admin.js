@@ -197,23 +197,40 @@
   // ---------- image upload helpers ----------
 
   document.querySelectorAll('input[type="file"][data-upload-target]').forEach(fileInput => {
+    let statusEl = fileInput.parentElement.querySelector(".upload-status");
+    if (!statusEl) {
+      statusEl = document.createElement("span");
+      statusEl.className = "upload-status";
+      fileInput.parentElement.appendChild(statusEl);
+    }
+
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files[0];
       if (!file) return;
       const targetName = fileInput.dataset.uploadTarget;
-      const targetInput = fileInput.closest("form").elements.namedItem(targetName);
+      const form = fileInput.closest("form");
+      const targetInput = form.elements.namedItem(targetName);
+
+      statusEl.textContent = "Uploading…";
+      statusEl.style.color = "var(--text-soft)";
+
       const fd = new FormData();
       fd.append("file", file);
       try {
         const res = await fetch("/api/admin/upload", { method: "POST", credentials: "include", body: fd });
-        const data = await res.json();
+        let data = {};
+        try { data = await res.json(); } catch (e) { /* non-JSON error page */ }
         if (res.ok && data.url) {
           targetInput.value = data.url;
+          statusEl.textContent = "Uploaded. Now click Save to keep it.";
+          statusEl.style.color = "var(--success)";
         } else {
-          alert(data.error || "Upload failed");
+          statusEl.textContent = data.error || `Upload failed (status ${res.status})`;
+          statusEl.style.color = "var(--danger)";
         }
       } catch (e) {
-        alert("Upload failed — check your connection.");
+        statusEl.textContent = "Upload failed — check your connection.";
+        statusEl.style.color = "var(--danger)";
       }
     });
   });

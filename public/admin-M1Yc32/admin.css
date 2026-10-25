@@ -52,9 +52,16 @@ body { min-height: 100vh; }
 .item-row .item-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .item-row .item-actions .icon-btn { width: 38px; height: 38px; font-size: 0.9rem; }
 
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+/* auto-fit instead of a fixed 2-column + breakpoint: every field is at least
+   220px wide and wraps naturally, so Profile/Projects/Experience/Skills all
+   line up consistently no matter how many fields they have. */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
 .form-grid .span-2 { grid-column: 1 / -1; }
-@media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
 
 .form-actions { display: flex; gap: 10px; margin-top: 6px; }
 

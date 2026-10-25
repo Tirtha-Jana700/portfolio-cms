@@ -140,55 +140,127 @@ label { font-size: 0.85rem; font-weight: 600; color: var(--text-soft); display: 
 }
 
 /* ---------- Nav ---------- */
+/* One box: "Portfolio" centered on top, all nav links together in a pill
+   below it (no hamburger — everything is always visible; the pill scrolls
+   horizontally on narrow screens instead of hiding links). */
 
 .nav {
   position: sticky;
   top: 0;
   z-index: 50;
   background: var(--bg);
-  padding: 14px 0;
+  padding: 16px 0 12px;
 }
 .nav-inner {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+}
+.nav-brand {
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
+.nav-links-box {
+  display: flex;
+  gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
   background: var(--bg);
   border-radius: var(--radius-pill);
   box-shadow: var(--raised-sm);
-  padding: 10px 14px 10px 24px;
+  padding: 8px;
+  scrollbar-width: none;
 }
-.nav-brand { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.02em; }
-.nav-links {
-  display: flex;
-  gap: 4px;
-  list-style: none;
-  margin: 0; padding: 0;
-}
-.nav-links a {
+.nav-links-box::-webkit-scrollbar { display: none; }
+.nav-links-box a {
+  flex-shrink: 0;
+  white-space: nowrap;
   display: block;
-  padding: 10px 16px;
+  padding: 9px 16px;
   border-radius: var(--radius-pill);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-soft);
   transition: box-shadow 0.15s ease, color 0.15s ease;
 }
-.nav-links a:hover { box-shadow: var(--raised-sm); color: var(--accent); }
-.nav-toggle { display: none; }
+.nav-links-box a:hover, .nav-links-box a:active { box-shadow: var(--pressed-sm); color: var(--accent); }
 
-@media (max-width: 720px) {
-  .nav-links {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0; right: 0;
-    flex-direction: column;
-    background: var(--bg);
-    border-radius: var(--radius-md);
-    box-shadow: var(--raised);
-    padding: 10px;
-  }
-  .nav-links.hidden { display: none; }
-  .nav-toggle { display: inline-flex; }
+/* ---------- Small helper text under admin fields ---------- */
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  margin: 6px 0 0;
+}
+.upload-status {
+  display: block;
+  font-size: 0.78rem;
+  margin-top: 6px;
+}
+
+/* ---------- Experience type badge ---------- */
+.timeline-top { margin-bottom: 8px; }
+.type-badge.type-education { color: var(--accent); }
+
+/* ---------- Intro splash screen ---------- */
+
+body.pre-reveal #mainContent { opacity: 0; }
+
+#introScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--bg);
+  text-align: center;
+  padding: 24px;
+  transform-origin: 50% 50%;
+  transition: opacity 0.9s ease, transform 0.9s cubic-bezier(.6, 0, 1, .4);
+}
+#introScreen.intro-zoom {
+  transform: scale(24);
+  opacity: 0;
+  pointer-events: none;
+}
+.intro-avatar {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raised);
+  padding: 8px;
+}
+.intro-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.intro-name { font-size: 1.15rem; font-weight: 700; }
+.intro-title { color: var(--accent); font-weight: 600; font-size: 0.92rem; margin-top: -10px; }
+.intro-word {
+  font-size: clamp(2.6rem, 16vw, 6rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-top: 6px;
+}
+
+/* ---------- Fade-in reveal of the whole site after intro ---------- */
+
+#mainContent.revealed > * {
+  opacity: 0;
+  animation: fadeInUp 0.7s ease forwards;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #introScreen { transition: opacity 0.3s ease; }
+  #introScreen.intro-zoom { transform: none; }
+  #mainContent.revealed > * { animation: none; opacity: 1; }
 }
 
 /* ---------- Hero ---------- */

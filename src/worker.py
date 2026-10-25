@@ -5,7 +5,7 @@ Routes:
   GET    /api/portfolio              public: everything the homepage needs
   GET    /media/<key>                public: serves uploaded images from R2
 
-  POST   /api/admin/login            { password } -> sets session cookie
+  POST   /api/admin/login            { password } -> sets session cookie (Rate-limited)
   POST   /api/admin/logout
   GET    /api/admin/session          { authenticated: bool }
 
@@ -21,6 +21,7 @@ Routes:
 """
 
 import json
+import time
 from datetime import datetime, timezone
 
 from flask import Flask, request, Response, jsonify
@@ -84,7 +85,7 @@ def now_iso():
 
 
 # ---------------------------------------------------------------------------
-# Admin auth
+# Admin auth & Rate Limiting
 # ---------------------------------------------------------------------------
 
 def serializer():
@@ -119,6 +120,29 @@ def cookie_is_secure():
 
 @app.post("/api/admin/login")
 def admin_login():
+    db = getattr(env(), "DB", None)
+    client_ip = request.headers.get("CF-Connecting-IP") or request.remote_addr or "unknown"
+    current_time = int(datetime.now(timezone.utc).timestamp())
+    one_hour = 3600
+
+    # 1. Check Rate Limiting via D1 Database
+    if db:
+        try:
+            record = d1_first("SELECT attempts, last_attempt FROM login_attempts WHERE ip = ?", [client_ip])
+            if record:
+                attempts = record.get("attempts", 0) if isinstance(record, dict) else 0
+                last_attempt = record.get("last_attempt", 0) if isinstance(record, dict) else 0
+
+                if attempts >= 5 and (current_time - last_attempt) < one_hour:
+                    remaining_mins = int((one_hour - (current_time - last_attempt)) / 60)
+                    return jsonify({
+                        "error": f"Too many failed login attempts. Please try again in {remaining_mins} minutes."
+                    }), 429
+                elif (current_time - last_attempt) >= one_hour:
+                    d1_run("UPDATE login_attempts SET attempts = 0, last_attempt = ? WHERE ip = ?", [current_time, client_ip])
+        except Exception:
+            pass
+
     body = request.get_json(silent=True) or {}
     password = body.get("password", "")
 
@@ -126,8 +150,30 @@ def admin_login():
     if not stored_hash:
         return jsonify({"error": "Admin password is not configured on the server yet."}), 500
 
+    # 2. Validate password
     if not password or not check_password_hash(stored_hash, password):
+        if db:
+            try:
+                d1_run(
+                    """
+                    INSERT INTO login_attempts (ip, attempts, last_attempt) 
+                    VALUES (?, 1, ?)
+                    ON CONFLICT(ip) DO UPDATE SET 
+                    attempts = attempts + 1, 
+                    last_attempt = ?
+                    """,
+                    [client_ip, current_time, current_time]
+                )
+            except Exception:
+                pass
         return jsonify({"error": "Incorrect password"}), 401
+
+    # 3. Successful login clears attempts
+    if db:
+        try:
+            d1_run("DELETE FROM login_attempts WHERE ip = ?", [client_ip])
+        except Exception:
+            pass
 
     token = serializer().dumps({"adm": True})
     resp = jsonify({"ok": True})

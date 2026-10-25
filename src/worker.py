@@ -194,11 +194,10 @@ def update_profile():
 
 
 def make_crud(table, allowed_fields, required_field, order_sql):
-    @admin_required
     def list_items():
         return jsonify(d1_all(f"SELECT * FROM {table} ORDER BY {order_sql}"))
+    list_items.__name__ = f"{table}_list_items"
 
-    @admin_required
     def create_item():
         body = request.get_json(silent=True) or {}
         if not body.get(required_field):
@@ -214,8 +213,8 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         d1_run(f"INSERT INTO {table} ({cols}) VALUES ({placeholders})", params)
         row = d1_first(f"SELECT * FROM {table} ORDER BY id DESC LIMIT 1")
         return jsonify(row), 201
+    create_item.__name__ = f"{table}_create_item"
 
-    @admin_required
     def update_item(item_id):
         body = request.get_json(silent=True) or {}
         fields = [f for f in allowed_fields if f in body]
@@ -228,13 +227,19 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         if row is None:
             return jsonify({"error": "Not found"}), 404
         return jsonify(row)
+    update_item.__name__ = f"{table}_update_item"
 
-    @admin_required
     def delete_item(item_id):
         d1_run(f"DELETE FROM {table} WHERE id = ?", [item_id])
         return jsonify({"ok": True})
+    delete_item.__name__ = f"{table}_delete_item"
 
-    return list_items, create_item, update_item, delete_item
+    return (
+        admin_required(list_items),
+        admin_required(create_item),
+        admin_required(update_item),
+        admin_required(delete_item),
+    )
 
 
 skills_list, skills_create, skills_update, skills_delete = make_crud(

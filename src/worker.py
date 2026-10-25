@@ -1,31 +1,14 @@
 """
 Portfolio backend — Flask app running on Cloudflare Python Workers.
-
-Routes:
-  GET    /api/portfolio              public: everything the homepage needs
-  GET    /media/<key>                public: serves uploaded images from R2
-
-  POST   /api/admin/login            { password } -> sets session cookie
-  POST   /api/admin/logout
-  GET    /api/admin/session          { authenticated: bool }
-
-  PUT    /api/admin/profile          replace profile fields
-  GET    /api/admin/skills
-  POST   /api/admin/skills
-  PUT    /api/admin/skills/<id>
-  DELETE /api/admin/skills/<id>
-  (same 4 for /api/admin/projects and /api/admin/experience)
-  POST   /api/admin/upload           multipart image upload -> R2 (if configured)
-
-  *      /<anything else>            falls through to the static files in /public
 """
 
 import json
+import time
+import hashlib
 from datetime import datetime, timezone
 
 from flask import Flask, request, Response, jsonify
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from werkzeug.security import check_password_hash
 from pyodide.ffi import run_sync
 from workers import wsgi
 
@@ -44,7 +27,6 @@ def env():
 
 
 def to_py(obj):
-    """Convert a Pyodide JsProxy result into a plain Python object, if needed."""
     if obj is None:
         return None
     if hasattr(obj, "to_py"):
@@ -84,8 +66,18 @@ def now_iso():
 
 
 # ---------------------------------------------------------------------------
-# Admin auth
+# Admin auth & Pure-Python Hashing
 # ---------------------------------------------------------------------------
+
+def custom_check_password(stored_hash, password):
+    """Pure Python SHA-256 verification compatible with Pyodide runtime."""
+    try:
+        salt, pwd_hash = stored_hash.split("$")
+        computed = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+        return computed == pwd_hash
+    except Exception:
+        return False
+
 
 def serializer():
     secret = getattr(env(), "SESSION_SECRET", None) or "dev-insecure-secret-change-me"
@@ -126,7 +118,7 @@ def admin_login():
     if not stored_hash:
         return jsonify({"error": "Admin password is not configured on the server yet."}), 500
 
-    if not password or not check_password_hash(stored_hash, password):
+    if not password or not custom_check_password(stored_hash, password):
         return jsonify({"error": "Incorrect password"}), 401
 
     token = serializer().dumps({"adm": True})
@@ -156,7 +148,7 @@ def admin_session():
 
 
 # ---------------------------------------------------------------------------
-# Public API — everything the homepage needs, in one call
+# Public API
 # ---------------------------------------------------------------------------
 
 @app.get("/api/portfolio")
@@ -174,7 +166,7 @@ def get_portfolio():
 
 
 # ---------------------------------------------------------------------------
-# Admin: profile
+# Admin: profile & CRUD
 # ---------------------------------------------------------------------------
 
 PROFILE_FIELDS = [
@@ -201,17 +193,11 @@ def update_profile():
     return jsonify(d1_first("SELECT * FROM profile WHERE id = 1"))
 
 
-# ---------------------------------------------------------------------------
-# Generic CRUD helper for skills / projects / experience
-# ---------------------------------------------------------------------------
-
 def make_crud(table, allowed_fields, required_field, order_sql):
-
-    @admin_required
     def list_items():
         return jsonify(d1_all(f"SELECT * FROM {table} ORDER BY {order_sql}"))
+    list_items.__name__ = f"{table}_list_items"
 
-    @admin_required
     def create_item():
         body = request.get_json(silent=True) or {}
         if not body.get(required_field):
@@ -227,8 +213,8 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         d1_run(f"INSERT INTO {table} ({cols}) VALUES ({placeholders})", params)
         row = d1_first(f"SELECT * FROM {table} ORDER BY id DESC LIMIT 1")
         return jsonify(row), 201
+    create_item.__name__ = f"{table}_create_item"
 
-    @admin_required
     def update_item(item_id):
         body = request.get_json(silent=True) or {}
         fields = [f for f in allowed_fields if f in body]
@@ -241,13 +227,19 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         if row is None:
             return jsonify({"error": "Not found"}), 404
         return jsonify(row)
+    update_item.__name__ = f"{table}_update_item"
 
-    @admin_required
     def delete_item(item_id):
         d1_run(f"DELETE FROM {table} WHERE id = ?", [item_id])
         return jsonify({"ok": True})
+    delete_item.__name__ = f"{table}_delete_item"
 
-    return list_items, create_item, update_item, delete_item
+    return (
+        admin_required(list_items),
+        admin_required(create_item),
+        admin_required(update_item),
+        admin_required(delete_item),
+    )
 
 
 skills_list, skills_create, skills_update, skills_delete = make_crud(
@@ -280,16 +272,20 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
-# Image upload (optional — needs the R2 "BUCKET" binding from wrangler.jsonc)
+# Media & R2 Storage (Supports both BUCKET and MEDIA bindings)
 # ---------------------------------------------------------------------------
+
+def get_bucket():
+    e = env()
+    return getattr(e, "BUCKET", None) or getattr(e, "MEDIA", None)
+
 
 @app.post("/api/admin/upload")
 @admin_required
 def upload_image():
-    bucket = getattr(env(), "BUCKET", None)
+    bucket = get_bucket()
     if bucket is None:
-        return jsonify({"error": "Image uploads aren't set up. Add the R2 'BUCKET' binding, "
-                                  "or just paste an image URL instead."}), 501
+        return jsonify({"error": "Image uploads aren't set up. Add the R2 'BUCKET' or 'MEDIA' binding."}), 501
 
     file = request.files.get("file")
     if not file:
@@ -310,8 +306,6 @@ def upload_image():
 
 
 def read_object_bytes(obj):
-    """R2ObjectBody exposes an async byte-reading method; the exact name has
-    moved around across Python Workers releases, so try both."""
     try:
         return run_sync(obj.bytes())
     except AttributeError:
@@ -320,7 +314,7 @@ def read_object_bytes(obj):
 
 @app.get("/media/<path:key>")
 def serve_media(key):
-    bucket = getattr(env(), "BUCKET", None)
+    bucket = get_bucket()
     if bucket is None:
         return Response("Not found", status=404)
     try:
@@ -335,16 +329,13 @@ def serve_media(key):
                 content_type = http_meta["contentType"]
         except Exception:
             pass
-        return Response(body,
-                         content_type=content_type,
-                         headers={"Cache-Control": "public, max-age=31536000, immutable"})
+        return Response(body, content_type=content_type, headers={"Cache-Control": "public, max-age=31536000, immutable"})
     except Exception as e:
         return Response(f"Error serving media: {e}", status=500)
 
 
 # ---------------------------------------------------------------------------
-# Static frontend fallthrough — serves everything in /public, including the
-# hidden admin page. Must stay LAST so the API routes above take priority.
+# Frontend Fallthrough
 # ---------------------------------------------------------------------------
 
 @app.get("/")
@@ -353,11 +344,8 @@ def frontend(path=""):
     assets = env().ASSETS
     asset_response = run_sync(assets.fetch(f"https://assets.local/{path}"))
     body = run_sync(asset_response.bytes())
-    return Response(
-        body,
-        status=asset_response.status,
-        headers=asset_response.headers,
-    )
+    return Response(body, status=asset_response.status, headers=asset_response.headers)
 
 
 Default = wsgi.entrypoint(app)
+

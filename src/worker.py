@@ -166,7 +166,7 @@ def get_portfolio():
 
 
 # ---------------------------------------------------------------------------
-# Admin: profile & CRUD with safe unique endpoints
+# Admin: profile & CRUD
 # ---------------------------------------------------------------------------
 
 PROFILE_FIELDS = [
@@ -272,7 +272,7 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
-# Media & R2 Storage (Explicitly bound to MEDIA as per wrangler.toml)
+# Media & R2 Storage
 # ---------------------------------------------------------------------------
 
 @app.post("/api/admin/upload")
@@ -280,7 +280,7 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 def upload_image():
     bucket = getattr(env(), "MEDIA", None)
     if bucket is None:
-        return jsonify({"error": "R2 bucket binding 'MEDIA' not found in environment."}), 501
+        return jsonify({"error": "R2 bucket binding 'MEDIA' not found."}), 501
 
     file = request.files.get("file")
     if not file:
@@ -295,17 +295,9 @@ def upload_image():
 
         data = file.read()
         run_sync(bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype or "application/octet-stream"}}))
-
         return jsonify({"url": f"/media/{key}"}), 201
     except Exception as e:
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500
-
-
-def read_object_bytes(obj):
-    try:
-        return run_sync(obj.bytes())
-    except AttributeError:
-        return run_sync(obj.arrayBuffer())
 
 
 @app.get("/media/<path:key>")
@@ -317,7 +309,13 @@ def serve_media(key):
         obj = run_sync(bucket.get(key))
         if obj is None:
             return Response("Not found", status=404)
-        body = read_object_bytes(obj)
+        
+        # Read object body robustly in Pyodide
+        try:
+            body = bytes(run_sync(obj.arrayBuffer()))
+        except Exception:
+            body = run_sync(obj.bytes())
+
         content_type = "application/octet-stream"
         try:
             http_meta = to_py(obj.httpMetadata)
@@ -325,9 +323,10 @@ def serve_media(key):
                 content_type = http_meta["contentType"]
         except Exception:
             pass
+
         return Response(body, content_type=content_type, headers={"Cache-Control": "public, max-age=31536000, immutable"})
     except Exception as e:
-        return Response(f"Error serving media: {e}", status=500)
+        return Response(f"Error serving media: {str(e)}", status=500)
 
 
 # ---------------------------------------------------------------------------

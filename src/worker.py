@@ -22,11 +22,11 @@ Routes:
 
 import json
 import time
+import hashlib
 from datetime import datetime, timezone
 
 from flask import Flask, request, Response, jsonify
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from werkzeug.security import check_password_hash
 from pyodide.ffi import run_sync
 from workers import wsgi
 
@@ -85,8 +85,18 @@ def now_iso():
 
 
 # ---------------------------------------------------------------------------
-# Admin auth & Rate Limiting
+# Admin auth, Pure-Python Hashing & Rate Limiting
 # ---------------------------------------------------------------------------
+
+def custom_check_password(stored_hash, password):
+    """Pure Python SHA-256 verification compatible with Pyodide runtime."""
+    try:
+        salt, pwd_hash = stored_hash.split("$")
+        computed = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+        return computed == pwd_hash
+    except Exception:
+        return False
+
 
 def serializer():
     secret = getattr(env(), "SESSION_SECRET", None) or "dev-insecure-secret-change-me"
@@ -120,32 +130,73 @@ def cookie_is_secure():
 
 @app.post("/api/admin/login")
 def admin_login():
-    try:
-        body = request.get_json(silent=True) or {}
-        password = body.get("password", "")
+    db = getattr(env(), "DB", None)
+    client_ip = request.headers.get("CF-Connecting-IP") or request.remote_addr or "unknown"
+    current_time = int(datetime.now(timezone.utc).timestamp())
+    one_hour = 3600
 
-        stored_hash = getattr(env(), "ADMIN_PASSWORD_HASH", None)
-        if not stored_hash:
-            return jsonify({"error": "DEBUG: ADMIN_PASSWORD_HASH is missing from Cloudflare environment variables!"}), 500
+    # 1. Check Rate Limiting via D1 Database
+    if db:
+        try:
+            record = d1_first("SELECT attempts, last_attempt FROM login_attempts WHERE ip = ?", [client_ip])
+            if record:
+                attempts = record.get("attempts", 0) if isinstance(record, dict) else 0
+                last_attempt = record.get("last_attempt", 0) if isinstance(record, dict) else 0
 
-        if not password or not check_password_hash(stored_hash, password):
-            return jsonify({"error": "Incorrect password"}), 401
+                if attempts >= 5 and (current_time - last_attempt) < one_hour:
+                    remaining_mins = int((one_hour - (current_time - last_attempt)) / 60)
+                    return jsonify({
+                        "error": f"Too many failed login attempts. Please try again in {remaining_mins} minutes."
+                    }), 429
+                elif (current_time - last_attempt) >= one_hour:
+                    d1_run("UPDATE login_attempts SET attempts = 0, last_attempt = ? WHERE ip = ?", [current_time, client_ip])
+        except Exception:
+            pass
 
-        token = serializer().dumps({"adm": True})
-        resp = jsonify({"ok": True})
-        resp.set_cookie(
-            ADMIN_COOKIE,
-            token,
-            max_age=SESSION_MAX_AGE,
-            httponly=True,
-            secure=cookie_is_secure(),
-            samesite="Strict",
-            path="/api/admin",
-        )
-        return resp
-    except Exception as e:
-        import traceback
-        return jsonify({"error": f"CRASH: {str(e)}", "trace": traceback.format_exc()}), 500
+    body = request.get_json(silent=True) or {}
+    password = body.get("password", "")
+
+    stored_hash = getattr(env(), "ADMIN_PASSWORD_HASH", None)
+    if not stored_hash:
+        return jsonify({"error": "Admin password is not configured on the server yet."}), 500
+
+    # 2. Validate password using pure python verification
+    if not password or not custom_check_password(stored_hash, password):
+        if db:
+            try:
+                d1_run(
+                    """
+                    INSERT INTO login_attempts (ip, attempts, last_attempt) 
+                    VALUES (?, 1, ?)
+                    ON CONFLICT(ip) DO UPDATE SET 
+                    attempts = attempts + 1, 
+                    last_attempt = ?
+                    """,
+                    [client_ip, current_time, current_time]
+                )
+            except Exception:
+                pass
+        return jsonify({"error": "Incorrect password"}), 401
+
+    # 3. Successful login clears attempts
+    if db:
+        try:
+            d1_run("DELETE FROM login_attempts WHERE ip = ?", [client_ip])
+        except Exception:
+            pass
+
+    token = serializer().dumps({"adm": True})
+    resp = jsonify({"ok": True})
+    resp.set_cookie(
+        ADMIN_COOKIE,
+        token,
+        max_age=SESSION_MAX_AGE,
+        httponly=True,
+        secure=cookie_is_secure(),
+        samesite="Strict",
+        path="/api/admin",
+    )
+    return resp
 
 
 @app.post("/api/admin/logout")

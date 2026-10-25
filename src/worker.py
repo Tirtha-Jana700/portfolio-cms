@@ -210,6 +210,7 @@ def make_crud(table, allowed_fields, required_field, order_sql):
     @admin_required
     def list_items():
         return jsonify(d1_all(f"SELECT * FROM {table} ORDER BY {order_sql}"))
+    list_items.__name__ = f"{table}_list_items"
 
     @admin_required
     def create_item():
@@ -227,6 +228,7 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         d1_run(f"INSERT INTO {table} ({cols}) VALUES ({placeholders})", params)
         row = d1_first(f"SELECT * FROM {table} ORDER BY id DESC LIMIT 1")
         return jsonify(row), 201
+    create_item.__name__ = f"{table}_create_item"
 
     @admin_required
     def update_item(item_id):
@@ -241,11 +243,13 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         if row is None:
             return jsonify({"error": "Not found"}), 404
         return jsonify(row)
+    update_item.__name__ = f"{table}_update_item"
 
     @admin_required
     def delete_item(item_id):
         d1_run(f"DELETE FROM {table} WHERE id = ?", [item_id])
         return jsonify({"ok": True})
+    delete_item.__name__ = f"{table}_delete_item"
 
     return list_items, create_item, update_item, delete_item
 
@@ -280,15 +284,15 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
-# Image upload (optional — needs the R2 "BUCKET" binding from wrangler.jsonc)
+# Image upload (optional — needs the R2 "MEDIA" binding from wrangler.toml)
 # ---------------------------------------------------------------------------
 
 @app.post("/api/admin/upload")
 @admin_required
 def upload_image():
-    bucket = getattr(env(), "BUCKET", None)
+    bucket = getattr(env(), "MEDIA", None)
     if bucket is None:
-        return jsonify({"error": "Image uploads aren't set up. Add the R2 'BUCKET' binding, "
+        return jsonify({"error": "Image uploads aren't set up. Add the R2 'MEDIA' binding, "
                                   "or just paste an image URL instead."}), 501
 
     file = request.files.get("file")
@@ -317,7 +321,7 @@ def read_object_bytes(obj):
 
 @app.get("/media/<path:key>")
 def serve_media(key):
-    bucket = getattr(env(), "BUCKET", None)
+    bucket = getattr(env(), "MEDIA", None)
     if bucket is None:
         return Response("Not found", status=404)
     obj = run_sync(bucket.get(key))
@@ -355,3 +359,4 @@ def frontend(path=""):
 
 
 Default = wsgi.entrypoint(app)
+

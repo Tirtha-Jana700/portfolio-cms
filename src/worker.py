@@ -272,20 +272,15 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
-# Media & R2 Storage (Supports both BUCKET and MEDIA bindings safely)
+# Media & R2 Storage (Explicitly bound to MEDIA as per wrangler.toml)
 # ---------------------------------------------------------------------------
-
-def get_bucket():
-    e = env()
-    return getattr(e, "BUCKET", None) or getattr(e, "MEDIA", None)
-
 
 @app.post("/api/admin/upload")
 @admin_required
 def upload_image():
-    bucket = get_bucket()
+    bucket = getattr(env(), "MEDIA", None)
     if bucket is None:
-        return jsonify({"error": "Image uploads aren't set up. Please add an R2 bucket binding named 'BUCKET' or 'MEDIA'."}), 501
+        return jsonify({"error": "R2 bucket binding 'MEDIA' not found in environment."}), 501
 
     file = request.files.get("file")
     if not file:
@@ -299,10 +294,7 @@ def upload_image():
         key = f"{uuid.uuid4().hex}{ext}"
 
         data = file.read()
-        
-        # Safely invoke put method across different Pyodide worker bindings
-        put_promise = bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype or "application/octet-stream"}})
-        run_sync(put_promise)
+        run_sync(bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype or "application/octet-stream"}}))
 
         return jsonify({"url": f"/media/{key}"}), 201
     except Exception as e:
@@ -318,7 +310,7 @@ def read_object_bytes(obj):
 
 @app.get("/media/<path:key>")
 def serve_media(key):
-    bucket = get_bucket()
+    bucket = getattr(env(), "MEDIA", None)
     if bucket is None:
         return Response("Not found", status=404)
     try:

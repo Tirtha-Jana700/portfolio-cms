@@ -166,7 +166,7 @@ def get_portfolio():
 
 
 # ---------------------------------------------------------------------------
-# Admin: profile & CRUD
+# Admin: profile & CRUD with safe unique endpoints
 # ---------------------------------------------------------------------------
 
 PROFILE_FIELDS = [
@@ -272,7 +272,7 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
-# Media & R2 Storage (Supports both BUCKET and MEDIA bindings)
+# Media & R2 Storage (Supports both BUCKET and MEDIA bindings safely)
 # ---------------------------------------------------------------------------
 
 def get_bucket():
@@ -285,7 +285,7 @@ def get_bucket():
 def upload_image():
     bucket = get_bucket()
     if bucket is None:
-        return jsonify({"error": "Image uploads aren't set up. Add the R2 'BUCKET' or 'MEDIA' binding."}), 501
+        return jsonify({"error": "Image uploads aren't set up. Please add an R2 bucket binding named 'BUCKET' or 'MEDIA'."}), 501
 
     file = request.files.get("file")
     if not file:
@@ -299,10 +299,14 @@ def upload_image():
         key = f"{uuid.uuid4().hex}{ext}"
 
         data = file.read()
-        run_sync(bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype or "application/octet-stream"}}))
+        
+        # Safely invoke put method across different Pyodide worker bindings
+        put_promise = bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype or "application/octet-stream"}})
+        run_sync(put_promise)
+
         return jsonify({"url": f"/media/{key}"}), 201
     except Exception as e:
-        return jsonify({"error": f"Upload failed: {e}"}), 500
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 
 def read_object_bytes(obj):

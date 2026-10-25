@@ -3,14 +3,16 @@ main = "src/worker.py"
 compatibility_date = "2026-10-25"
 compatibility_flags = ["python_workers"]
 
-# D1 Database binding
 [[d1_databases]]
 binding = "DB"
 database_name = "portfolio-db"
 database_id = "7e0180d8-e888-47e1-82c7-0765897a7653"
 
-# R2 Bucket binding
 [[r2_buckets]]
-binding = "BUCKET"
+binding = "MEDIA"
 bucket_name = "portfolio-media"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
 

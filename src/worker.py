@@ -280,15 +280,15 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
-# Image upload (optional — needs the R2 "MEDIA" binding from wrangler.jsonc)
+# Image upload (optional — needs the R2 "BUCKET" binding from wrangler.jsonc)
 # ---------------------------------------------------------------------------
 
 @app.post("/api/admin/upload")
 @admin_required
 def upload_image():
-    bucket = getattr(env(), "MEDIA", None)
+    bucket = getattr(env(), "BUCKET", None)
     if bucket is None:
-        return jsonify({"error": "Image uploads aren't set up. Add the R2 'MEDIA' binding, "
+        return jsonify({"error": "Image uploads aren't set up. Add the R2 'BUCKET' binding, "
                                   "or just paste an image URL instead."}), 501
 
     file = request.files.get("file")
@@ -317,7 +317,7 @@ def read_object_bytes(obj):
 
 @app.get("/media/<path:key>")
 def serve_media(key):
-    bucket = getattr(env(), "MEDIA", None)
+    bucket = getattr(env(), "BUCKET", None)
     if bucket is None:
         return Response("Not found", status=404)
     obj = run_sync(bucket.get(key))

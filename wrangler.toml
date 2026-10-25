@@ -1,6 +1,6 @@
 name = "portfolio-cms"
 main = "src/worker.py"
-compatibility_date = "2024-03-20"
+compatibility_date = "2024-09-25"
 compatibility_flags = ["python_workers"]
 
 # D1 Database binding

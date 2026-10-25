@@ -1,26 +1,9 @@
 """
 Portfolio backend — Flask app running on Cloudflare Python Workers.
-
-Routes:
-  GET    /api/portfolio              public: everything the homepage needs
-  GET    /media/<key>                public: serves uploaded images from R2
-
-  POST   /api/admin/login            { password } -> sets session cookie
-  POST   /api/admin/logout
-  GET    /api/admin/session          { authenticated: bool }
-
-  PUT    /api/admin/profile          replace profile fields
-  GET    /api/admin/skills
-  POST   /api/admin/skills
-  PUT    /api/admin/skills/<id>
-  DELETE /api/admin/skills/<id>
-  (same 4 for /api/admin/projects and /api/admin/experience)
-  POST   /api/admin/upload           multipart image upload -> R2 (if configured)
-
-  *      /<anything else>            falls through to the static files in /public
 """
 
 import json
+import time
 import hashlib
 from datetime import datetime, timezone
 
@@ -44,7 +27,6 @@ def env():
 
 
 def to_py(obj):
-    """Convert a Pyodide JsProxy result into a plain Python object, if needed."""
     if obj is None:
         return None
     if hasattr(obj, "to_py"):
@@ -166,7 +148,7 @@ def admin_session():
 
 
 # ---------------------------------------------------------------------------
-# Public API — everything the homepage needs, in one call
+# Public API
 # ---------------------------------------------------------------------------
 
 @app.get("/api/portfolio")
@@ -184,7 +166,7 @@ def get_portfolio():
 
 
 # ---------------------------------------------------------------------------
-# Admin: profile
+# Admin: profile & CRUD
 # ---------------------------------------------------------------------------
 
 PROFILE_FIELDS = [
@@ -211,12 +193,7 @@ def update_profile():
     return jsonify(d1_first("SELECT * FROM profile WHERE id = 1"))
 
 
-# ---------------------------------------------------------------------------
-# Generic CRUD helper for skills / projects / experience
-# ---------------------------------------------------------------------------
-
 def make_crud(table, allowed_fields, required_field, order_sql):
-
     @admin_required
     def list_items():
         return jsonify(d1_all(f"SELECT * FROM {table} ORDER BY {order_sql}"))
@@ -290,7 +267,7 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
-# Image upload (supports both 'BUCKET' and 'MEDIA' R2 bindings)
+# Media & R2 Storage
 # ---------------------------------------------------------------------------
 
 def get_bucket():
@@ -303,7 +280,7 @@ def get_bucket():
 def upload_image():
     bucket = get_bucket()
     if bucket is None:
-        return jsonify({"error": "Image uploads aren't set up. Add the R2 'BUCKET' or 'MEDIA' binding."}), 501
+        return jsonify({"error": "Image uploads aren't set up."}), 501
 
     file = request.files.get("file")
     if not file:
@@ -324,7 +301,6 @@ def upload_image():
 
 
 def read_object_bytes(obj):
-    """R2ObjectBody exposes an async byte-reading method; try both across Pyodide releases."""
     try:
         return run_sync(obj.bytes())
     except AttributeError:
@@ -348,15 +324,13 @@ def serve_media(key):
                 content_type = http_meta["contentType"]
         except Exception:
             pass
-        return Response(body,
-                         content_type=content_type,
-                         headers={"Cache-Control": "public, max-age=31536000, immutable"})
+        return Response(body, content_type=content_type, headers={"Cache-Control": "public, max-age=31536000, immutable"})
     except Exception as e:
         return Response(f"Error serving media: {e}", status=500)
 
 
 # ---------------------------------------------------------------------------
-# Static frontend fallthrough — serves everything in /public, including admin.
+# Frontend Fallthrough
 # ---------------------------------------------------------------------------
 
 @app.get("/")
@@ -365,11 +339,7 @@ def frontend(path=""):
     assets = env().ASSETS
     asset_response = run_sync(assets.fetch(f"https://assets.local/{path}"))
     body = run_sync(asset_response.bytes())
-    return Response(
-        body,
-        status=asset_response.status,
-        headers=asset_response.headers,
-    )
+    return Response(body, status=asset_response.status, headers=asset_response.headers)
 
 
 Default = wsgi.entrypoint(app)

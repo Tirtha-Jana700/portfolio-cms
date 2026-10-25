@@ -11,13 +11,17 @@
     website: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm7.94 10h-3.1a16.6 16.6 0 0 0-1.3-6.1A10.03 10.03 0 0 1 19.94 10zM12 2.08c.9 1.1 2.03 3.3 2.34 7.92H9.66C9.97 5.38 11.1 3.18 12 2.08zM9.46 3.9A16.6 16.6 0 0 0 8.16 10h-3.1A10.03 10.03 0 0 1 9.46 3.9zM5.06 12h3.1c.14 2.25.6 4.33 1.3 6.1A10.03 10.03 0 0 1 5.06 14H12zm2.6 0h4.68c-.31 4.62-1.44 6.82-2.34 7.92-.9-1.1-2.03-3.3-2.34-7.92z"/></svg>',
   };
 
-  function iconFor(key) { return ICONS[key] || ICONS.website; }
+  function iconFor(key) {
+    return ICONS[key] || ICONS.website;
+  }
+
   function el(tag, cls, html) {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
     if (html !== undefined) node.innerHTML = html;
     return node;
   }
+
   function escapeHtml(str) {
     const d = document.createElement("div");
     d.textContent = str == null ? "" : String(str);
@@ -28,27 +32,31 @@
     try {
       const res = await fetch("/api/portfolio", { cache: "no-store" });
       return await res.json();
-    } catch (e) { return null; }
+    } catch (e) {
+      console.error("Failed to load portfolio", e);
+      return null;
+    }
   }
 
   function renderHero(p) {
-    document.getElementById("heroName").textContent = p.full_name || "";
+    const name = p.full_name || "";
+    document.getElementById("heroName").textContent = name || "";
     document.getElementById("heroTitle").textContent = p.title || "";
     document.getElementById("heroTagline").textContent = p.tagline || "";
 
     if (p.avatar_url) {
       const img = document.getElementById("avatarImg");
       img.src = p.avatar_url;
-      img.alt = p.full_name || "";
+      img.alt = name;
       img.style.display = "block";
-      img.onerror = () => { img.style.display = "none"; };
     }
 
     const actions = document.getElementById("heroActions");
     actions.innerHTML = "";
     if (p.resume_url) {
       const a = el("a", "btn btn-accent", "Download Resume");
-      a.href = p.resume_url; a.target = "_blank"; a.rel = "noopener";
+      a.href = p.resume_url;
+      a.target = "_blank"; a.rel = "noopener";
       actions.appendChild(a);
     }
     if (p.email) {
@@ -64,6 +72,7 @@
       if (p[field]) {
         const a = el("a", "icon-btn", iconFor(icon));
         a.href = p[field]; a.target = "_blank"; a.rel = "noopener";
+        a.title = icon;
         social.appendChild(a);
       }
     });
@@ -103,7 +112,7 @@
       const card = el("div", "card project-card");
       let html = "";
       if (p.image_url) {
-        html += `<div class="project-image"><img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.title)}" onerror="this.parentElement.style.display='none'" /></div>`;
+        html += `<div class="project-image"><img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.title)}" /></div>`;
       }
       html += `<div class="project-body">
         <h3>${escapeHtml(p.title)}</h3>
@@ -153,7 +162,11 @@
     items.forEach(([label, value, href]) => {
       const card = el("div", "card contact-card");
       const inner = `<div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div>`;
-      card.innerHTML = href ? `<a href="${escapeHtml(href)}">${inner}</a>` : inner;
+      if (href) {
+        card.innerHTML = `<a href="${escapeHtml(href)}">${inner}</a>`;
+      } else {
+        card.innerHTML = inner;
+      }
       grid.appendChild(card);
     });
     section.classList.remove("hidden");
@@ -161,7 +174,40 @@
 
   function renderFooter(p) {
     const year = new Date().getFullYear();
-    document.getElementById("footerText").textContent = p.full_name ? `© ${year} ${p.full_name}` : `© ${year}`;
+    const name = p.full_name || "";
+    document.getElementById("footerText").textContent =
+      name ? `© ${year} ${name}` : `© ${year}`;
+  }
+
+  function setMeta(selectorAttr, name, content) {
+    if (!content) return;
+    let tag = document.querySelector(`meta[${selectorAttr}="${name}"]`);
+    if (!tag) {
+      tag = document.createElement("meta");
+      tag.setAttribute(selectorAttr, name);
+      document.head.appendChild(tag);
+    }
+    tag.setAttribute("content", content);
+  }
+
+  function applySEO(p) {
+    const name = p.full_name || "Portfolio";
+    const title = p.title ? `${name} — ${p.title}` : name;
+    const description = p.tagline || p.bio || `Portfolio of ${name}`;
+
+    document.title = title;
+    setMeta("name", "description", description);
+    setMeta("property", "og:title", title);
+    setMeta("property", "og:description", description);
+    setMeta("property", "og:url", window.location.href);
+    setMeta("name", "twitter:title", title);
+    setMeta("name", "twitter:description", description);
+    if (p.avatar_url) {
+      try {
+        const absoluteUrl = new URL(p.avatar_url, window.location.origin).href;
+        setMeta("property", "og:image", absoluteUrl);
+      } catch (e) { /* ignore invalid URL */ }
+    }
   }
 
   function runIntro(profile) {
@@ -178,17 +224,29 @@
       introAvatarImg.style.display = "block";
     }
 
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const holdMs = reduceMotion ? 50 : 2500;
+    const zoomMs = reduceMotion ? 50 : 950;
+
     setTimeout(() => {
       introScreen.classList.add("intro-zoom");
-      document.body.classList.remove("pre-reveal");
-      mainContent.classList.add("revealed");
-      setTimeout(() => { introScreen.style.display = "none"; }, 950);
-    }, 2500);
+      revealMain(mainContent);
+      setTimeout(() => { introScreen.style.display = "none"; }, zoomMs);
+    }, holdMs);
+  }
+
+  function revealMain(mainContent) {
+    document.body.classList.remove("pre-reveal");
+    mainContent.classList.add("revealed");
+    Array.from(mainContent.children).forEach((child, i) => {
+      child.style.animationDelay = (i * 0.12) + "s";
+    });
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
     const data = await fetchPortfolio();
     const profile = (data && data.profile) || {};
+
     renderHero(profile);
     renderAbout(profile);
     renderSkills((data && data.skills) || []);
@@ -196,6 +254,8 @@
     renderExperience((data && data.experience) || []);
     renderContact(profile);
     renderFooter(profile);
+    applySEO(profile);
+
     runIntro(profile);
   });
 })();

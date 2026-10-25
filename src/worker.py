@@ -5,7 +5,7 @@ Routes:
   GET    /api/portfolio              public: everything the homepage needs
   GET    /media/<key>                public: serves uploaded images from R2
 
-  POST   /api/admin/login            { password } -> sets session cookie (Rate-limited)
+  POST   /api/admin/login            { password } -> sets session cookie
   POST   /api/admin/logout
   GET    /api/admin/session          { authenticated: bool }
 
@@ -21,7 +21,6 @@ Routes:
 """
 
 import json
-import time
 import hashlib
 from datetime import datetime, timezone
 
@@ -85,7 +84,7 @@ def now_iso():
 
 
 # ---------------------------------------------------------------------------
-# Admin auth, Pure-Python Hashing & Rate Limiting
+# Admin auth & Pure-Python Hashing
 # ---------------------------------------------------------------------------
 
 def custom_check_password(stored_hash, password):
@@ -130,29 +129,6 @@ def cookie_is_secure():
 
 @app.post("/api/admin/login")
 def admin_login():
-    db = getattr(env(), "DB", None)
-    client_ip = request.headers.get("CF-Connecting-IP") or request.remote_addr or "unknown"
-    current_time = int(datetime.now(timezone.utc).timestamp())
-    one_hour = 3600
-
-    # 1. Check Rate Limiting via D1 Database
-    if db:
-        try:
-            record = d1_first("SELECT attempts, last_attempt FROM login_attempts WHERE ip = ?", [client_ip])
-            if record:
-                attempts = record.get("attempts", 0) if isinstance(record, dict) else 0
-                last_attempt = record.get("last_attempt", 0) if isinstance(record, dict) else 0
-
-                if attempts >= 5 and (current_time - last_attempt) < one_hour:
-                    remaining_mins = int((one_hour - (current_time - last_attempt)) / 60)
-                    return jsonify({
-                        "error": f"Too many failed login attempts. Please try again in {remaining_mins} minutes."
-                    }), 429
-                elif (current_time - last_attempt) >= one_hour:
-                    d1_run("UPDATE login_attempts SET attempts = 0, last_attempt = ? WHERE ip = ?", [current_time, client_ip])
-        except Exception:
-            pass
-
     body = request.get_json(silent=True) or {}
     password = body.get("password", "")
 
@@ -160,30 +136,8 @@ def admin_login():
     if not stored_hash:
         return jsonify({"error": "Admin password is not configured on the server yet."}), 500
 
-    # 2. Validate password using pure python verification
     if not password or not custom_check_password(stored_hash, password):
-        if db:
-            try:
-                d1_run(
-                    """
-                    INSERT INTO login_attempts (ip, attempts, last_attempt) 
-                    VALUES (?, 1, ?)
-                    ON CONFLICT(ip) DO UPDATE SET 
-                    attempts = attempts + 1, 
-                    last_attempt = ?
-                    """,
-                    [client_ip, current_time, current_time]
-                )
-            except Exception:
-                pass
         return jsonify({"error": "Incorrect password"}), 401
-
-    # 3. Successful login clears attempts
-    if db:
-        try:
-            d1_run("DELETE FROM login_attempts WHERE ip = ?", [client_ip])
-        except Exception:
-            pass
 
     token = serializer().dumps({"adm": True})
     resp = jsonify({"ok": True})
@@ -266,7 +220,6 @@ def make_crud(table, allowed_fields, required_field, order_sql):
     @admin_required
     def list_items():
         return jsonify(d1_all(f"SELECT * FROM {table} ORDER BY {order_sql}"))
-    list_items.__name__ = f"{table}_list_items"
 
     @admin_required
     def create_item():
@@ -284,7 +237,6 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         d1_run(f"INSERT INTO {table} ({cols}) VALUES ({placeholders})", params)
         row = d1_first(f"SELECT * FROM {table} ORDER BY id DESC LIMIT 1")
         return jsonify(row), 201
-    create_item.__name__ = f"{table}_create_item"
 
     @admin_required
     def update_item(item_id):
@@ -299,13 +251,11 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         if row is None:
             return jsonify({"error": "Not found"}), 404
         return jsonify(row)
-    update_item.__name__ = f"{table}_update_item"
 
     @admin_required
     def delete_item(item_id):
         d1_run(f"DELETE FROM {table} WHERE id = ?", [item_id])
         return jsonify({"ok": True})
-    delete_item.__name__ = f"{table}_delete_item"
 
     return list_items, create_item, update_item, delete_item
 
@@ -340,35 +290,41 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
-# Image upload (optional — needs the R2 "MEDIA" binding from wrangler.toml)
+# Image upload (supports both 'BUCKET' and 'MEDIA' R2 bindings)
 # ---------------------------------------------------------------------------
+
+def get_bucket():
+    e = env()
+    return getattr(e, "BUCKET", None) or getattr(e, "MEDIA", None)
+
 
 @app.post("/api/admin/upload")
 @admin_required
 def upload_image():
-    bucket = getattr(env(), "MEDIA", None)
+    bucket = get_bucket()
     if bucket is None:
-        return jsonify({"error": "Image uploads aren't set up. Add the R2 'MEDIA' binding, "
-                                  "or just paste an image URL instead."}), 501
+        return jsonify({"error": "Image uploads aren't set up. Add the R2 'BUCKET' or 'MEDIA' binding."}), 501
 
     file = request.files.get("file")
     if not file:
         return jsonify({"error": "No file provided"}), 400
 
-    import uuid
-    ext = ""
-    if "." in file.filename:
-        ext = "." + file.filename.rsplit(".", 1)[1].lower()
-    key = f"{uuid.uuid4().hex}{ext}"
+    try:
+        import uuid
+        ext = ""
+        if "." in file.filename:
+            ext = "." + file.filename.rsplit(".", 1)[1].lower()
+        key = f"{uuid.uuid4().hex}{ext}"
 
-    data = file.read()
-    run_sync(bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype}}))
-    return jsonify({"url": f"/media/{key}"}), 201
+        data = file.read()
+        run_sync(bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype or "application/octet-stream"}}))
+        return jsonify({"url": f"/media/{key}"}), 201
+    except Exception as e:
+        return jsonify({"error": f"Upload failed: {e}"}), 500
 
 
 def read_object_bytes(obj):
-    """R2ObjectBody exposes an async byte-reading method; the exact name has
-    moved around across Python Workers releases, so try both."""
+    """R2ObjectBody exposes an async byte-reading method; try both across Pyodide releases."""
     try:
         return run_sync(obj.bytes())
     except AttributeError:
@@ -377,28 +333,30 @@ def read_object_bytes(obj):
 
 @app.get("/media/<path:key>")
 def serve_media(key):
-    bucket = getattr(env(), "MEDIA", None)
+    bucket = get_bucket()
     if bucket is None:
         return Response("Not found", status=404)
-    obj = run_sync(bucket.get(key))
-    if obj is None:
-        return Response("Not found", status=404)
-    body = read_object_bytes(obj)
-    content_type = "application/octet-stream"
     try:
-        http_meta = to_py(obj.httpMetadata)
-        if http_meta and http_meta.get("contentType"):
-            content_type = http_meta["contentType"]
-    except Exception:
-        pass
-    return Response(body,
-                     content_type=content_type,
-                     headers={"Cache-Control": "public, max-age=31536000, immutable"})
+        obj = run_sync(bucket.get(key))
+        if obj is None:
+            return Response("Not found", status=404)
+        body = read_object_bytes(obj)
+        content_type = "application/octet-stream"
+        try:
+            http_meta = to_py(obj.httpMetadata)
+            if http_meta and http_meta.get("contentType"):
+                content_type = http_meta["contentType"]
+        except Exception:
+            pass
+        return Response(body,
+                         content_type=content_type,
+                         headers={"Cache-Control": "public, max-age=31536000, immutable"})
+    except Exception as e:
+        return Response(f"Error serving media: {e}", status=500)
 
 
 # ---------------------------------------------------------------------------
-# Static frontend fallthrough — serves everything in /public, including the
-# hidden admin page. Must stay LAST so the API routes above take priority.
+# Static frontend fallthrough — serves everything in /public, including admin.
 # ---------------------------------------------------------------------------
 
 @app.get("/")

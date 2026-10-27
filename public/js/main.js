@@ -11,9 +11,7 @@
     website: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm7.94 10h-3.1a16.6 16.6 0 0 0-1.3-6.1A10.03 10.03 0 0 1 19.94 10zM12 2.08c.9 1.1 2.03 3.3 2.34 7.92H9.66C9.97 5.38 11.1 3.18 12 2.08zM9.46 3.9A16.6 16.6 0 0 0 8.16 10h-3.1A10.03 10.03 0 0 1 9.46 3.9zM5.06 12h3.1c.14 2.25.6 4.33 1.3 6.1A10.03 10.03 0 0 1 5.06 14H12zm2.6 0h4.68c-.31 4.62-1.44 6.82-2.34 7.92-.9-1.1-2.03-3.3-2.34-7.92z"/></svg>',
   };
 
-  function iconFor(key) {
-    return ICONS[key] || ICONS.website;
-  }
+  function iconFor(key) { return ICONS[key] || ICONS.website; }
 
   function el(tag, cls, html) {
     const node = document.createElement(tag);
@@ -38,6 +36,8 @@
     }
   }
 
+  // ---------- render functions ----------
+
   function renderHero(p) {
     const name = p.full_name || "";
     document.getElementById("heroName").textContent = name || "";
@@ -55,8 +55,7 @@
     actions.innerHTML = "";
     if (p.resume_url) {
       const a = el("a", "btn btn-accent", "Download Resume");
-      a.href = p.resume_url;
-      a.target = "_blank"; a.rel = "noopener";
+      a.href = p.resume_url; a.target = "_blank"; a.rel = "noopener";
       actions.appendChild(a);
     }
     if (p.email) {
@@ -95,7 +94,7 @@
       const card = el("div", "card skill-card");
       card.innerHTML = `
         <div class="skill-name"><span>${escapeHtml(s.name)}</span><span>${level}%</span></div>
-        <div class="skill-track"><div class="skill-fill" style="width:${level}%"></div></div>
+        <div class="skill-track"><div class="skill-fill" data-level="${level}" style="width:0%"></div></div>
       `;
       grid.appendChild(card);
     });
@@ -156,17 +155,15 @@
     grid.innerHTML = "";
     const items = [];
     if (p.email) items.push(["Email", p.email, "mailto:" + p.email]);
-    if (p.phone) items.push(["Phone", p.phone, "tel:" + p.phone]);
-    if (p.location) items.push(["Location", p.location, null]);
+    if (p.location) items.push(["Location", p.location, "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.location)]);
     if (!items.length) { section.classList.add("hidden"); return; }
     items.forEach(([label, value, href]) => {
       const card = el("div", "card contact-card");
       const inner = `<div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div>`;
-      if (href) {
-        card.innerHTML = `<a href="${escapeHtml(href)}">${inner}</a>`;
-      } else {
-        card.innerHTML = inner;
-      }
+      const a = el("a", "contact-link", inner);
+      a.href = href;
+      if (href.startsWith("http")) { a.target = "_blank"; a.rel = "noopener"; }
+      card.appendChild(a);
       grid.appendChild(card);
     });
     section.classList.remove("hidden");
@@ -175,20 +172,15 @@
   function renderFooter(p) {
     const year = new Date().getFullYear();
     const name = p.full_name || "";
-    document.getElementById("footerText").textContent =
-      name ? `© ${year} ${name}` : `© ${year}`;
+    document.getElementById("footerText").textContent = name ? `© ${year} ${name}` : `© ${year}`;
   }
 
-  // ---------- SEO: update <title> and meta tags once we know who this is ----------
+  // ---------- SEO ----------
 
   function setMeta(selectorAttr, name, content) {
     if (!content) return;
     let tag = document.querySelector(`meta[${selectorAttr}="${name}"]`);
-    if (!tag) {
-      tag = document.createElement("meta");
-      tag.setAttribute(selectorAttr, name);
-      document.head.appendChild(tag);
-    }
+    if (!tag) { tag = document.createElement("meta"); tag.setAttribute(selectorAttr, name); document.head.appendChild(tag); }
     tag.setAttribute("content", content);
   }
 
@@ -196,7 +188,6 @@
     const name = p.full_name || "Portfolio";
     const title = p.title ? `${name} — ${p.title}` : name;
     const description = p.tagline || p.bio || `Portfolio of ${name}`;
-
     document.title = title;
     setMeta("name", "description", description);
     setMeta("property", "og:title", title);
@@ -205,14 +196,109 @@
     setMeta("name", "twitter:title", title);
     setMeta("name", "twitter:description", description);
     if (p.avatar_url) {
-      try {
-        const absoluteUrl = new URL(p.avatar_url, window.location.origin).href;
-        setMeta("property", "og:image", absoluteUrl);
-      } catch (e) { /* ignore invalid URL */ }
+      try { setMeta("property", "og:image", new URL(p.avatar_url, window.location.origin).href); } catch (e) {}
     }
   }
 
+  // ---------- Scroll reveal (re-triggers every time an element re-enters view) ----------
+
+  function initScrollReveal() {
+    const targets = document.querySelectorAll(".reveal");
+    if (!("IntersectionObserver" in window) || !targets.length) {
+      targets.forEach(t => t.classList.add("in-view"));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        entry.target.classList.toggle("in-view", entry.isIntersecting);
+      });
+    }, { threshold: 0.15 });
+    targets.forEach(t => io.observe(t));
+  }
+
+  // ---------- Skills bars animate in on scroll ----------
+
+  function initSkillsReveal() {
+    const section = document.getElementById("skills");
+    if (!section || !("IntersectionObserver" in window)) {
+      document.querySelectorAll(".skill-fill").forEach(f => { f.style.width = f.dataset.level + "%"; });
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const fills = entry.target.querySelectorAll(".skill-fill");
+        if (entry.isIntersecting) {
+          fills.forEach((f, i) => setTimeout(() => { f.style.width = f.dataset.level + "%"; }, i * 70));
+        } else {
+          fills.forEach(f => { f.style.width = "0%"; });
+        }
+      });
+    }, { threshold: 0.3 });
+    io.observe(section);
+  }
+
+  // ---------- Nav: active-section tracking + bouncy sliding indicator ----------
+
+  function initNav() {
+    const navLinks = document.getElementById("navLinks");
+    const indicator = document.getElementById("navIndicator");
+    const links = Array.from(document.querySelectorAll(".nav-link"));
+    const sectionIds = links.map(l => l.dataset.section);
+    const sections = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+
+    function moveIndicator(link) {
+      if (!link) return;
+      const linkRect = link.getBoundingClientRect();
+      const boxRect = navLinks.getBoundingClientRect();
+      indicator.style.width = linkRect.width + "px";
+      indicator.style.height = linkRect.height + "px";
+      indicator.style.left = (linkRect.left - boxRect.left) + "px";
+      indicator.style.top = (linkRect.top - boxRect.top) + "px";
+    }
+
+    function setActive(link, animate) {
+      links.forEach(l => l.classList.remove("active"));
+      link.classList.add("active");
+      moveIndicator(link);
+      if (animate) {
+        link.classList.remove("bounce");
+        void link.offsetWidth; // restart animation
+        link.classList.add("bounce");
+      }
+    }
+
+    links.forEach(link => {
+      link.addEventListener("click", () => setActive(link, true));
+    });
+
+    if (sections.length && "IntersectionObserver" in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const link = links.find(l => l.dataset.section === entry.target.id);
+            if (link && !link.classList.contains("active")) setActive(link, true);
+          }
+        });
+      }, { threshold: 0.4, rootMargin: "-20% 0px -40% 0px" });
+      sections.forEach(s => io.observe(s));
+    }
+
+    // initial placement + keep indicator correct on resize/orientation change
+    const placeInitial = () => {
+      const active = document.querySelector(".nav-link.active") || links[0];
+      if (active) setActive(active, false);
+    };
+    placeInitial();
+    window.addEventListener("resize", placeInitial);
+  }
+
   // ---------- Intro splash screen ----------
+  // The ring spins automatically via its CSS animation from the moment the
+  // page loads, so it's already "loading" for the full duration of the
+  // /api/portfolio fetch with no JS needed for that part. This function runs
+  // once that fetch resolves: it fills in the name/avatar, holds briefly so
+  // a very fast (cached) load doesn't flash by, then plays the ready-pulse
+  // and zooms through into the site.
 
   function runIntro(profile) {
     const introScreen = document.getElementById("introScreen");
@@ -229,14 +315,18 @@
     }
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const holdMs = reduceMotion ? 50 : 2500;
-    const zoomMs = reduceMotion ? 50 : 950;
+    const minHold = reduceMotion ? 20 : 500;
+    const readyPauseMs = reduceMotion ? 20 : 420;
+    const zoomMs = reduceMotion ? 20 : 950;
 
     setTimeout(() => {
-      introScreen.classList.add("intro-zoom");
-      revealMain(mainContent);
-      setTimeout(() => { introScreen.style.display = "none"; }, zoomMs);
-    }, holdMs);
+      introScreen.classList.add("intro-ready");
+      setTimeout(() => {
+        introScreen.classList.add("intro-zoom");
+        revealMain(mainContent);
+        setTimeout(() => { introScreen.style.display = "none"; }, zoomMs);
+      }, readyPauseMs);
+    }, minHold);
   }
 
   function revealMain(mainContent) {
@@ -245,23 +335,26 @@
     Array.from(mainContent.children).forEach((child, i) => {
       child.style.animationDelay = (i * 0.12) + "s";
     });
+    initScrollReveal();
+    initSkillsReveal();
+    initNav();
   }
 
   // ---------- Boot ----------
 
-  document.addEventListener("DOMContentLoaded", async () => {
-    const data = await fetchPortfolio();
-    const profile = (data && data.profile) || {};
-
-    renderHero(profile);
-    renderAbout(profile);
-    renderSkills((data && data.skills) || []);
-    renderProjects((data && data.projects) || []);
-    renderExperience((data && data.experience) || []);
-    renderContact(profile);
-    renderFooter(profile);
-    applySEO(profile);
-
-    runIntro(profile);
+  document.addEventListener("DOMContentLoaded", () => {
+    fetchPortfolio().then(data => {
+      const profile = (data && data.profile) || {};
+      renderHero(profile);
+      renderAbout(profile);
+      renderSkills((data && data.skills) || []);
+      renderProjects((data && data.projects) || []);
+      renderExperience((data && data.experience) || []);
+      renderContact(profile);
+      renderFooter(profile);
+      applySEO(profile);
+      runIntro(profile);
+    });
   });
 })();
+

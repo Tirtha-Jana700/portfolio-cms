@@ -5,7 +5,7 @@ Portfolio backend — Flask app running on Cloudflare Python Workers.
 import json
 import time
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from flask import Flask, request, Response, jsonify
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -157,11 +157,17 @@ def get_portfolio():
     skills = d1_all("SELECT * FROM skills ORDER BY sort_order ASC, id ASC")
     projects = d1_all("SELECT * FROM projects ORDER BY sort_order ASC, id DESC")
     experience = d1_all("SELECT * FROM experience ORDER BY sort_order ASC, id ASC")
+    
+    # Fetch active stories from the last 24 hours
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    stories = d1_all("SELECT * FROM stories WHERE created_at >= ? ORDER BY id ASC", [cutoff])
+
     return jsonify({
         "profile": profile,
         "skills": skills,
         "projects": projects,
         "experience": experience,
+        "stories": stories,
     })
 
 
@@ -171,7 +177,7 @@ def get_portfolio():
 
 PROFILE_FIELDS = [
     "full_name", "title", "tagline", "bio", "avatar_url", "resume_url",
-    "email", "phone", "location", "github_url", "linkedin_url",
+    "email", "location", "github_url", "linkedin_url",
     "twitter_url", "instagram_url", "youtube_url",
 ]
 
@@ -252,7 +258,7 @@ app.delete("/api/admin/skills/<int:item_id>")(skills_delete)
 
 projects_list, projects_create, projects_update, projects_delete = make_crud(
     "projects",
-    ["title", "description", "image_url", "tech_stack", "live_url", "repo_url", "featured", "sort_order"],
+    ["title", "description", "image_url", "tech_stack", "live_url", "repo_url", "starred", "sort_order"],
     "title", "sort_order ASC, id DESC",
 )
 app.get("/api/admin/projects")(projects_list)
@@ -272,13 +278,47 @@ app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
 
 # ---------------------------------------------------------------------------
+# Stories Management API
+# ---------------------------------------------------------------------------
+
+@app.get("/api/admin/stories")
+@admin_required
+def admin_get_stories():
+    return jsonify(d1_all("SELECT * FROM stories ORDER BY id DESC"))
+
+
+@app.post("/api/admin/stories")
+@admin_required
+def admin_create_story():
+    body = request.get_json(silent=True) or {}
+    media_url = body.get("media_url")
+    if not media_url:
+        return jsonify({"error": "media_url is required"}), 400
+    d1_run("INSERT INTO stories (media_url, created_at) VALUES (?, ?)", [media_url, now_iso()])
+    row = d1_first("SELECT * FROM stories ORDER BY id DESC LIMIT 1")
+    return jsonify(row), 201
+
+
+@app.delete("/api/admin/stories/<int:story_id>")
+@admin_required
+def admin_delete_story(story_id):
+    d1_run("DELETE FROM stories WHERE id = ?", [story_id])
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
 # Media & R2 Storage
 # ---------------------------------------------------------------------------
+
+def get_bucket():
+    e = env()
+    return getattr(e, "BUCKET", None) or getattr(e, "MEDIA", None)
+
 
 @app.post("/api/admin/upload")
 @admin_required
 def upload_image():
-    bucket = getattr(env(), "MEDIA", None)
+    bucket = get_bucket()
     if bucket is None:
         return jsonify({"error": "R2 bucket binding 'MEDIA' not found."}), 501
 
@@ -302,7 +342,7 @@ def upload_image():
 
 @app.get("/media/<path:key>")
 def serve_media(key):
-    bucket = getattr(env(), "MEDIA", None)
+    bucket = get_bucket()
     if bucket is None:
         return Response("Not found", status=404)
     try:
@@ -310,7 +350,6 @@ def serve_media(key):
         if obj is None:
             return Response("Not found", status=404)
         
-        # Read object body robustly in Pyodide
         try:
             body = bytes(run_sync(obj.arrayBuffer()))
         except Exception:

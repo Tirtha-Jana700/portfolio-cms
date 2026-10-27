@@ -10,6 +10,8 @@
 </head>
 <body>
 
+<div id="toastContainer" aria-live="polite"></div>
+
 <!-- Login -->
 <div class="login-wrap" id="loginWrap">
   <div class="card login-card">
@@ -51,19 +53,28 @@
           <div class="field span-2"><label>Tagline</label><input name="tagline" placeholder="One line under your name" /></div>
           <div class="field span-2"><label>Bio</label><textarea name="bio" rows="5"></textarea></div>
 
-          <div class="field">
-            <label>Avatar image URL</label>
-            <input name="avatar_url" placeholder="https://..." />
-            <p class="field-hint">Must be a direct link to an image file (ends in .jpg/.png/.webp etc). A link to a webpage — like a Google Drive or Google Photos share link — won't display. Uploading a file below fills this in for you.</p>
-            <div class="file-row" style="margin-top:8px;">
-              <input type="file" accept="image/*" data-upload-target="avatar_url" />
+          <div class="field span-2">
+            <label>Avatar photo</label>
+            <div class="photo-upload-row">
+              <div class="photo-preview" id="avatarPreviewWrap">
+                <img id="avatarPreview" alt="" style="display:none" />
+                <span class="photo-preview-empty" id="avatarPreviewEmpty">No photo</span>
+              </div>
+              <div class="photo-upload-controls">
+                <label class="btn btn-accent file-picker-btn">
+                  Choose photo
+                  <input type="file" accept="image/*" data-upload-target="avatar_url" data-preview-target="avatarPreview" data-preview-empty="avatarPreviewEmpty" hidden />
+                </label>
+                <div class="upload-progress-track hidden" id="avatar_url-progress-track"><div class="upload-progress-fill" id="avatar_url-progress-fill"></div></div>
+                <span class="upload-status" id="avatar_url-status"></span>
+              </div>
             </div>
+            <input type="hidden" name="avatar_url" />
           </div>
-          <div class="field"><label>Resume URL</label><input name="resume_url" placeholder="https://..." /></div>
 
+          <div class="field"><label>Resume URL</label><input name="resume_url" placeholder="https://..." /></div>
           <div class="field"><label>Email</label><input name="email" type="email" /></div>
-          <div class="field"><label>Phone</label><input name="phone" /></div>
-          <div class="field"><label>Location</label><input name="location" /></div>
+          <div class="field span-2"><label>Location</label><input name="location" placeholder="City, Country" /></div>
           <div class="field"><label>GitHub URL</label><input name="github_url" /></div>
           <div class="field"><label>LinkedIn URL</label><input name="linkedin_url" /></div>
           <div class="field"><label>Twitter / X URL</label><input name="twitter_url" /></div>
@@ -72,7 +83,6 @@
         </div>
         <div class="form-actions">
           <button type="submit" class="btn btn-accent">Save profile</button>
-          <span class="save-note hidden" id="profileSaved">Saved</span>
         </div>
       </form>
     </div>
@@ -103,14 +113,26 @@
         <div class="form-grid">
           <div class="field span-2"><label>Title</label><input name="title" required /></div>
           <div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
+
           <div class="field span-2">
-            <label>Image URL</label>
-            <input name="image_url" placeholder="https://..." />
-            <p class="field-hint">Must be a direct link to an image file. Uploading a file below fills this in for you — then remember to click "Add / Update project" to save it.</p>
-            <div class="file-row" style="margin-top:8px;">
-              <input type="file" accept="image/*" data-upload-target="image_url" />
+            <label>Project photo</label>
+            <div class="photo-upload-row">
+              <div class="photo-preview photo-preview-wide" id="imagePreviewWrap">
+                <img id="imagePreview" alt="" style="display:none" />
+                <span class="photo-preview-empty" id="imagePreviewEmpty">No photo</span>
+              </div>
+              <div class="photo-upload-controls">
+                <label class="btn btn-accent file-picker-btn">
+                  Choose photo
+                  <input type="file" accept="image/*" data-upload-target="image_url" data-preview-target="imagePreview" data-preview-empty="imagePreviewEmpty" hidden />
+                </label>
+                <div class="upload-progress-track hidden" id="image_url-progress-track"><div class="upload-progress-fill" id="image_url-progress-fill"></div></div>
+                <span class="upload-status" id="image_url-status"></span>
+              </div>
             </div>
+            <input type="hidden" name="image_url" />
           </div>
+
           <div class="field span-2"><label>Tech stack (comma separated)</label><input name="tech_stack" placeholder="React, Flask, D1" /></div>
           <div class="field"><label>Live URL</label><input name="live_url" /></div>
           <div class="field"><label>Repo URL</label><input name="repo_url" /></div>
@@ -156,3 +178,4 @@
 <script src="admin.js"></script>
 </body>
 </html>
+

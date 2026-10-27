@@ -10,20 +10,30 @@
   const loginWrap = document.getElementById("loginWrap");
   const adminShell = document.getElementById("adminShell");
 
+  // ---------- toast notifications ----------
+
+  function showToast(message, type) {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = "toast toast-" + (type || "info");
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add("toast-in"));
+    setTimeout(() => {
+      toast.classList.remove("toast-in");
+      toast.classList.add("toast-out");
+      setTimeout(() => toast.remove(), 300);
+    }, 2600);
+  }
+
   // ---------- auth ----------
 
   async function checkSession() {
     try {
       const res = await api("/session");
       const data = await res.json();
-      if (data.authenticated) {
-        showDashboard();
-      } else {
-        showLogin();
-      }
-    } catch (e) {
-      showLogin();
-    }
+      if (data.authenticated) { showDashboard(); } else { showLogin(); }
+    } catch (e) { showLogin(); }
   }
 
   function showLogin() {
@@ -75,6 +85,21 @@
     });
   });
 
+  // ---------- image preview helper ----------
+
+  function setPreview(previewId, emptyId, url) {
+    const img = document.getElementById(previewId);
+    const empty = document.getElementById(emptyId);
+    if (!img) return;
+    if (url) {
+      img.src = url; img.style.display = "block";
+      if (empty) empty.style.display = "none";
+    } else {
+      img.style.display = "none";
+      if (empty) empty.style.display = "block";
+    }
+  }
+
   // ---------- profile ----------
 
   async function loadProfile() {
@@ -86,6 +111,7 @@
       const input = form.elements.namedItem(key);
       if (input) input.value = profile[key] || "";
     });
+    setPreview("avatarPreview", "avatarPreviewEmpty", profile.avatar_url);
   }
 
   document.getElementById("profileForm").addEventListener("submit", async (e) => {
@@ -93,11 +119,16 @@
     const form = e.target;
     const body = {};
     new FormData(form).forEach((v, k) => { body[k] = v; });
-    const res = await api("/profile", { method: "PUT", body: JSON.stringify(body) });
-    if (res.ok) {
-      const note = document.getElementById("profileSaved");
-      note.classList.remove("hidden");
-      setTimeout(() => note.classList.add("hidden"), 2000);
+    try {
+      const res = await api("/profile", { method: "PUT", body: JSON.stringify(body) });
+      if (res.ok) {
+        showToast("Profile saved", "success");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error || "Couldn't save profile", "error");
+      }
+    } catch (e) {
+      showToast("Network error — couldn't save profile", "error");
     }
   });
 
@@ -105,21 +136,15 @@
 
   const CONFIG = {
     skills: {
-      listEl: "skillsList",
-      formEl: "skillForm",
-      titleField: "name",
+      listEl: "skillsList", formEl: "skillForm", titleField: "name",
       subFn: (i) => (i.category ? i.category + " · " : "") + (i.level ?? 0) + "%",
     },
     projects: {
-      listEl: "projectsList",
-      formEl: "projectForm",
-      titleField: "title",
+      listEl: "projectsList", formEl: "projectForm", titleField: "title",
       subFn: (i) => i.tech_stack || "",
     },
     experience: {
-      listEl: "experienceList",
-      formEl: "experienceForm",
-      titleField: "role",
+      listEl: "experienceList", formEl: "experienceForm", titleField: "role",
       subFn: (i) => [i.organization, [i.start_date, i.end_date].filter(Boolean).join(" – ")].filter(Boolean).join(" · "),
     },
   };
@@ -161,6 +186,7 @@
       const input = form.elements.namedItem(key);
       if (input) input.value = item[key] ?? "";
     });
+    if (type === "projects") setPreview("imagePreview", "imagePreviewEmpty", item.image_url);
     form.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -168,12 +194,18 @@
     const form = document.getElementById(CONFIG[type].formEl);
     form.reset();
     form.elements.namedItem("id").value = "";
+    if (type === "projects") setPreview("imagePreview", "imagePreviewEmpty", "");
   }
 
   async function deleteItem(type, id) {
     if (!confirm("Delete this entry?")) return;
-    await api(`/${type}/${id}`, { method: "DELETE" });
-    loadList(type);
+    try {
+      await api(`/${type}/${id}`, { method: "DELETE" });
+      showToast("Deleted", "success");
+      loadList(type);
+    } catch (e) {
+      showToast("Couldn't delete — try again", "error");
+    }
   }
 
   Object.keys(CONFIG).forEach(type => {
@@ -183,57 +215,84 @@
       const body = {};
       new FormData(form).forEach((v, k) => { if (k !== "id") body[k] = v; });
       const id = form.elements.namedItem("id").value;
-      if (id) {
-        await api(`/${type}/${id}`, { method: "PUT", body: JSON.stringify(body) });
-      } else {
-        await api(`/${type}`, { method: "POST", body: JSON.stringify(body) });
+      try {
+        const res = id
+          ? await api(`/${type}/${id}`, { method: "PUT", body: JSON.stringify(body) })
+          : await api(`/${type}`, { method: "POST", body: JSON.stringify(body) });
+        if (res.ok) {
+          showToast(id ? "Updated" : "Added", "success");
+          clearForm(type);
+          loadList(type);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          showToast(data.error || "Save failed", "error");
+        }
+      } catch (e) {
+        showToast("Network error — save failed", "error");
       }
-      clearForm(type);
-      loadList(type);
     });
     form.querySelector("[data-cancel-edit]").addEventListener("click", () => clearForm(type));
   });
 
-  // ---------- image upload helpers ----------
+  // ---------- image upload: XHR so we get real progress events ----------
+
+  function uploadWithProgress(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/admin/upload");
+      xhr.withCredentials = true;
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        let data = {};
+        try { data = JSON.parse(xhr.responseText); } catch (err) {}
+        if (xhr.status >= 200 && xhr.status < 300 && data.url) {
+          resolve(data.url);
+        } else {
+          reject(new Error(data.error || `Upload failed (status ${xhr.status})`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
+      const fd = new FormData();
+      fd.append("file", file);
+      xhr.send(fd);
+    });
+  }
 
   document.querySelectorAll('input[type="file"][data-upload-target]').forEach(fileInput => {
-    let statusEl = fileInput.parentElement.querySelector(".upload-status");
-    if (!statusEl) {
-      statusEl = document.createElement("span");
-      statusEl.className = "upload-status";
-      fileInput.parentElement.appendChild(statusEl);
-    }
+    const targetName = fileInput.dataset.uploadTarget;
+    const previewId = fileInput.dataset.previewTarget;
+    const previewEmptyId = fileInput.dataset.previewEmpty;
+    const track = document.getElementById(targetName + "-progress-track");
+    const fill = document.getElementById(targetName + "-progress-fill");
+    const statusEl = document.getElementById(targetName + "-status");
 
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files[0];
       if (!file) return;
-      const targetName = fileInput.dataset.uploadTarget;
       const form = fileInput.closest("form");
       const targetInput = form.elements.namedItem(targetName);
 
-      statusEl.textContent = "Uploading…";
-      statusEl.style.color = "var(--text-soft)";
+      if (track) { track.classList.remove("hidden"); }
+      if (fill) { fill.style.width = "0%"; }
+      if (statusEl) { statusEl.textContent = "Uploading…"; statusEl.style.color = "var(--text-soft)"; }
 
-      const fd = new FormData();
-      fd.append("file", file);
       try {
-        const res = await fetch("/api/admin/upload", { method: "POST", credentials: "include", body: fd });
-        let data = {};
-        try { data = await res.json(); } catch (e) { /* non-JSON error page */ }
-        if (res.ok && data.url) {
-          targetInput.value = data.url;
-          statusEl.textContent = "Uploaded. Now click Save to keep it.";
-          statusEl.style.color = "var(--success)";
-        } else {
-          statusEl.textContent = data.error || `Upload failed (status ${res.status})`;
-          statusEl.style.color = "var(--danger)";
-        }
-      } catch (e) {
-        statusEl.textContent = "Upload failed — check your connection.";
-        statusEl.style.color = "var(--danger)";
+        const url = await uploadWithProgress(file, (pct) => { if (fill) fill.style.width = pct + "%"; });
+        targetInput.value = url;
+        setPreview(previewId, previewEmptyId, url);
+        if (statusEl) { statusEl.textContent = "Uploaded. Click Save to keep it."; statusEl.style.color = "var(--success)"; }
+        showToast("Image uploaded", "success");
+      } catch (err) {
+        if (statusEl) { statusEl.textContent = err.message; statusEl.style.color = "var(--danger)"; }
+        showToast(err.message || "Upload failed", "error");
+      } finally {
+        setTimeout(() => { if (track) track.classList.add("hidden"); }, 600);
       }
     });
   });
 
   checkSession();
 })();
+

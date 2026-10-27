@@ -21,10 +21,17 @@
 </head>
 <body class="pre-reveal">
 
-<!-- Intro splash: name / title / avatar + big "Portfolio" word, shown
-     briefly, then zooms out through its own center into the site. -->
+<!-- Intro: loading ring spins around the avatar while data fetches, snaps
+     complete + pulses when ready, then the whole screen zooms through the
+     "Portfolio" word into the site. -->
 <div id="introScreen">
-  <div class="intro-avatar"><img id="introAvatarImg" src="" alt="" style="display:none" /></div>
+  <div class="intro-ring-wrap">
+    <svg class="intro-ring" viewBox="0 0 120 120">
+      <circle class="intro-ring-track" cx="60" cy="60" r="54" />
+      <circle class="intro-ring-progress" cx="60" cy="60" r="54" />
+    </svg>
+    <div class="intro-avatar"><img id="introAvatarImg" src="" alt="" style="display:none" /></div>
+  </div>
   <div class="intro-name" id="introName"></div>
   <div class="intro-title" id="introTitle"></div>
   <div class="intro-word">Portfolio</div>
@@ -35,17 +42,18 @@
   <nav class="nav">
     <div class="container nav-inner">
       <div class="nav-brand">Portfolio</div>
-      <div class="nav-links-box">
-        <a href="#about">About</a>
-        <a href="#skills">Skills</a>
-        <a href="#projects">Projects</a>
-        <a href="#experience">Experience</a>
-        <a href="#contact">Contact</a>
+      <div class="nav-links" id="navLinks">
+        <span class="nav-indicator" id="navIndicator"></span>
+        <a href="#about" class="nav-link" data-section="about">About</a>
+        <a href="#skills" class="nav-link" data-section="skills">Skills</a>
+        <a href="#projects" class="nav-link" data-section="projects">Projects</a>
+        <a href="#experience" class="nav-link" data-section="experience">Experience</a>
+        <a href="#contact" class="nav-link" data-section="contact">Contact</a>
       </div>
     </div>
   </nav>
 
-  <header class="hero container">
+  <header class="hero container reveal">
     <div class="avatar-frame" id="avatarFrame">
       <img id="avatarImg" src="" alt="" style="display:none" />
     </div>
@@ -56,7 +64,7 @@
     <div class="social-row" id="socialRow"></div>
   </header>
 
-  <section id="about" class="hidden">
+  <section id="about" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">About</h2>
       <div class="card about-card">
@@ -65,7 +73,7 @@
     </div>
   </section>
 
-  <section id="skills" class="hidden">
+  <section id="skills" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Skills</h2>
       <p class="section-subtitle">What I work with day to day.</p>
@@ -73,7 +81,7 @@
     </div>
   </section>
 
-  <section id="projects" class="hidden">
+  <section id="projects" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Projects</h2>
       <p class="section-subtitle">A few things I've built.</p>
@@ -81,14 +89,14 @@
     </div>
   </section>
 
-  <section id="experience" class="hidden">
+  <section id="experience" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Experience</h2>
       <div class="timeline" id="timeline"></div>
     </div>
   </section>
 
-  <section id="contact" class="hidden">
+  <section id="contact" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Get in touch</h2>
       <div class="contact-grid" id="contactGrid"></div>
@@ -104,3 +112,4 @@
 <script src="/js/main.js"></script>
 </body>
 </html>
+

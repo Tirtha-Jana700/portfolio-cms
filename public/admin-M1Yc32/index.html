@@ -4,19 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow, noarchive" />
-<title>Admin</title>
+<title>Admin Dashboard</title>
 <link rel="stylesheet" href="/css/style.css" />
 <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
 
-<div id="toastContainer" aria-live="polite"></div>
-
-<!-- Login -->
 <div class="login-wrap" id="loginWrap">
   <div class="card login-card">
     <h1>Admin</h1>
-    <p>Enter your password to manage the site.</p>
+    <p>Enter your password to manage your portfolio.</p>
     <form id="loginForm">
       <div class="field">
         <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required />
@@ -27,7 +24,6 @@
   </div>
 </div>
 
-<!-- Dashboard -->
 <div class="admin-shell" id="adminShell">
   <div class="admin-topbar">
     <div class="container admin-topbar-inner">
@@ -42,59 +38,51 @@
       <button class="admin-tab" data-tab="skills">Skills</button>
       <button class="admin-tab" data-tab="projects">Projects</button>
       <button class="admin-tab" data-tab="experience">Experience</button>
+      <button class="admin-tab" data-tab="stories">Stories</button>
     </div>
 
-    <!-- Profile -->
+    <!-- Profile Tab -->
     <div class="admin-panel active" id="panel-profile">
       <form id="profileForm" class="card">
         <div class="form-grid">
           <div class="field"><label>Full name</label><input name="full_name" /></div>
-          <div class="field"><label>Title</label><input name="title" placeholder="e.g. Web Developer" /></div>
-          <div class="field span-2"><label>Tagline</label><input name="tagline" placeholder="One line under your name" /></div>
+          <div class="field"><label>Title</label><input name="title" /></div>
+          <div class="field span-2"><label>Tagline</label><input name="tagline" /></div>
           <div class="field span-2"><label>Bio</label><textarea name="bio" rows="5"></textarea></div>
 
           <div class="field span-2">
-            <label>Avatar photo</label>
-            <div class="photo-upload-row">
-              <div class="photo-preview" id="avatarPreviewWrap">
-                <img id="avatarPreview" alt="" style="display:none" />
-                <span class="photo-preview-empty" id="avatarPreviewEmpty">No photo</span>
-              </div>
-              <div class="photo-upload-controls">
-                <label class="btn btn-accent file-picker-btn">
-                  Choose photo
-                  <input type="file" accept="image/*" data-upload-target="avatar_url" data-preview-target="avatarPreview" data-preview-empty="avatarPreviewEmpty" hidden />
-                </label>
-                <div class="upload-progress-track hidden" id="avatar_url-progress-track"><div class="upload-progress-fill" id="avatar_url-progress-fill"></div></div>
-                <span class="upload-status" id="avatar_url-status"></span>
-              </div>
+            <label>Avatar Image (Upload from Device)</label>
+            <input type="hidden" name="avatar_url" id="avatarUrlInput" />
+            <div class="file-row">
+              <input type="file" accept="image/*" data-upload-target="avatarUrlInput" />
             </div>
-            <input type="hidden" name="avatar_url" />
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="avatarProgress"></div></div>
           </div>
 
-          <div class="field"><label>Resume URL</label><input name="resume_url" placeholder="https://..." /></div>
+          <div class="field"><label>Resume URL</label><input name="resume_url" /></div>
           <div class="field"><label>Email</label><input name="email" type="email" /></div>
-          <div class="field span-2"><label>Location</label><input name="location" placeholder="City, Country" /></div>
+          <div class="field span-2"><label>Location (for Google Maps link)</label><input name="location" placeholder="e.g. Kolkata, West Bengal" /></div>
+
           <div class="field"><label>GitHub URL</label><input name="github_url" /></div>
           <div class="field"><label>LinkedIn URL</label><input name="linkedin_url" /></div>
           <div class="field"><label>Twitter / X URL</label><input name="twitter_url" /></div>
           <div class="field"><label>Instagram URL</label><input name="instagram_url" /></div>
           <div class="field"><label>YouTube URL</label><input name="youtube_url" /></div>
         </div>
-        <div class="form-actions">
+        <div class="form-actions" style="margin-top:20px;">
           <button type="submit" class="btn btn-accent">Save profile</button>
         </div>
       </form>
     </div>
 
-    <!-- Skills -->
+    <!-- Skills Tab -->
     <div class="admin-panel" id="panel-skills">
       <div class="item-list" id="skillsList"></div>
       <form id="skillForm" class="card">
         <input type="hidden" name="id" />
         <div class="form-grid">
           <div class="field"><label>Skill name</label><input name="name" required /></div>
-          <div class="field"><label>Category (optional)</label><input name="category" placeholder="e.g. Frontend" /></div>
+          <div class="field"><label>Category</label><input name="category" /></div>
           <div class="field"><label>Level (0–100)</label><input name="level" type="number" min="0" max="100" value="80" /></div>
           <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
         </div>
@@ -105,7 +93,7 @@
       </form>
     </div>
 
-    <!-- Projects -->
+    <!-- Projects Tab (with Starred Checkbox) -->
     <div class="admin-panel" id="panel-projects">
       <div class="item-list" id="projectsList"></div>
       <form id="projectForm" class="card">
@@ -113,30 +101,21 @@
         <div class="form-grid">
           <div class="field span-2"><label>Title</label><input name="title" required /></div>
           <div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
-
           <div class="field span-2">
-            <label>Project photo</label>
-            <div class="photo-upload-row">
-              <div class="photo-preview photo-preview-wide" id="imagePreviewWrap">
-                <img id="imagePreview" alt="" style="display:none" />
-                <span class="photo-preview-empty" id="imagePreviewEmpty">No photo</span>
-              </div>
-              <div class="photo-upload-controls">
-                <label class="btn btn-accent file-picker-btn">
-                  Choose photo
-                  <input type="file" accept="image/*" data-upload-target="image_url" data-preview-target="imagePreview" data-preview-empty="imagePreviewEmpty" hidden />
-                </label>
-                <div class="upload-progress-track hidden" id="image_url-progress-track"><div class="upload-progress-fill" id="image_url-progress-fill"></div></div>
-                <span class="upload-status" id="image_url-status"></span>
-              </div>
+            <label>Project Image (Upload from Device)</label>
+            <input type="hidden" name="image_url" id="projectImageUrlInput" />
+            <div class="file-row">
+              <input type="file" accept="image/*" data-upload-target="projectImageUrlInput" />
             </div>
-            <input type="hidden" name="image_url" />
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="projectProgress"></div></div>
           </div>
-
-          <div class="field span-2"><label>Tech stack (comma separated)</label><input name="tech_stack" placeholder="React, Flask, D1" /></div>
+          <div class="field span-2"><label>Tech stack (comma separated)</label><input name="tech_stack" /></div>
           <div class="field"><label>Live URL</label><input name="live_url" /></div>
           <div class="field"><label>Repo URL</label><input name="repo_url" /></div>
-          <div class="field"><label>Featured (1 or 0)</label><input name="featured" type="number" min="0" max="1" value="0" /></div>
+          <div class="field" style="display:flex; align-items:center; gap:10px; padding-top:24px;">
+            <input type="checkbox" name="starred" value="1" id="starredCheck" style="width:20px; height:20px;" />
+            <label for="starredCheck" style="margin:0; cursor:pointer;">Mark as Popular (Star)</label>
+          </div>
           <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
         </div>
         <div class="form-actions">
@@ -146,7 +125,7 @@
       </form>
     </div>
 
-    <!-- Experience -->
+    <!-- Experience Tab -->
     <div class="admin-panel" id="panel-experience">
       <div class="item-list" id="experienceList"></div>
       <form id="experienceForm" class="card">
@@ -162,8 +141,8 @@
           <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
           <div class="field"><label>Role / Degree</label><input name="role" required /></div>
           <div class="field"><label>Organization</label><input name="organization" /></div>
-          <div class="field"><label>Start date</label><input name="start_date" placeholder="e.g. 2023" /></div>
-          <div class="field"><label>End date</label><input name="end_date" placeholder="e.g. Present" /></div>
+          <div class="field"><label>Start date</label><input name="start_date" /></div>
+          <div class="field"><label>End date</label><input name="end_date" /></div>
           <div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
         </div>
         <div class="form-actions">
@@ -172,10 +151,33 @@
         </div>
       </form>
     </div>
+
+    <!-- Stories Tab (Instagram 24-hour stories manager) -->
+    <div class="admin-panel" id="panel-stories">
+      <div class="item-list" id="storiesList"></div>
+      <form id="storyForm" class="card">
+        <div class="form-grid">
+          <div class="field span-2">
+            <label>Upload New 24-Hour Story</label>
+            <input type="hidden" name="media_url" id="storyMediaUrlInput" />
+            <div class="file-row">
+              <input type="file" accept="image/*" data-upload-target="storyMediaUrlInput" />
+            </div>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="storyProgress"></div></div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-accent">Publish Story</button>
+        </div>
+      </form>
+    </div>
+
   </div>
 </div>
 
+<div id="toastContainer"></div>
 <script src="admin.js"></script>
 </body>
 </html>
+
 

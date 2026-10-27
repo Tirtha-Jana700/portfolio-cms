@@ -4,58 +4,55 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Portfolio</title>
-
 <meta name="description" content="Personal portfolio — projects, skills, and experience." />
-<meta name="robots" content="index, follow" />
-<meta name="theme-color" content="#e6e7ee" />
-<link rel="canonical" href="/" />
-
-<meta property="og:type" content="website" />
-<meta property="og:title" content="Portfolio" />
-<meta property="og:description" content="Personal portfolio — projects, skills, and experience." />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Portfolio" />
-<meta name="twitter:description" content="Personal portfolio — projects, skills, and experience." />
-
 <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="pre-reveal">
 
-<!-- Intro: loading ring spins around the avatar while data fetches, snaps
-     complete + pulses when ready, then the whole screen zooms through the
-     "Portfolio" word into the site. -->
 <div id="introScreen">
-  <div class="intro-ring-wrap">
-    <svg class="intro-ring" viewBox="0 0 120 120">
-      <circle class="intro-ring-track" cx="60" cy="60" r="54" />
-      <circle class="intro-ring-progress" cx="60" cy="60" r="54" />
-    </svg>
-    <div class="intro-avatar"><img id="introAvatarImg" src="" alt="" style="display:none" /></div>
+  <div class="intro-avatar-wrap">
+    <div class="intro-spinner"></div>
+    <img id="introAvatarImg" src="" alt="" style="display:none" />
   </div>
   <div class="intro-name" id="introName"></div>
   <div class="intro-title" id="introTitle"></div>
   <div class="intro-word">Portfolio</div>
 </div>
 
+<div id="storyModal">
+  <div class="story-content-box">
+    <div class="story-header-bar" id="storyProgressSegments"></div>
+    <div class="story-image-wrap" id="storyImageWrap"></div>
+    <div class="story-footer-bar">
+      <span id="storyTimestamp"></span>
+      <button class="btn" id="closeStoryBtn" style="padding:6px 14px; font-size:0.8rem;">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="mainContent">
 
+  <!-- Transparent Nav Bar with NO background rectangle box -->
   <nav class="nav">
     <div class="container nav-inner">
       <div class="nav-brand">Portfolio</div>
-      <div class="nav-links" id="navLinks">
-        <span class="nav-indicator" id="navIndicator"></span>
-        <a href="#about" class="nav-link" data-section="about">About</a>
-        <a href="#skills" class="nav-link" data-section="skills">Skills</a>
-        <a href="#projects" class="nav-link" data-section="projects">Projects</a>
-        <a href="#experience" class="nav-link" data-section="experience">Experience</a>
-        <a href="#contact" class="nav-link" data-section="contact">Contact</a>
+      <div class="nav-links-box">
+        <a href="#about" class="active">About</a>
+        <a href="#skills">Skills</a>
+        <a href="#projects">Projects</a>
+        <a href="#experience">Experience</a>
+        <a href="#contact">Contact</a>
       </div>
     </div>
   </nav>
 
-  <header class="hero container reveal">
-    <div class="avatar-frame" id="avatarFrame">
-      <img id="avatarImg" src="" alt="" style="display:none" />
+  <header class="hero container">
+    <div class="avatar-container" id="avatarContainer">
+      <div class="avatar-ring" id="avatarRing">
+        <div class="avatar-frame">
+          <img id="avatarImg" src="" alt="" style="display:none" />
+        </div>
+      </div>
     </div>
     <h1 id="heroName">&nbsp;</h1>
     <div class="title" id="heroTitle"></div>
@@ -64,7 +61,7 @@
     <div class="social-row" id="socialRow"></div>
   </header>
 
-  <section id="about" class="hidden reveal">
+  <section id="about" class="hidden">
     <div class="container">
       <h2 class="section-title">About</h2>
       <div class="card about-card">
@@ -73,7 +70,7 @@
     </div>
   </section>
 
-  <section id="skills" class="hidden reveal">
+  <section id="skills" class="hidden">
     <div class="container">
       <h2 class="section-title">Skills</h2>
       <p class="section-subtitle">What I work with day to day.</p>
@@ -81,22 +78,31 @@
     </div>
   </section>
 
-  <section id="projects" class="hidden reveal">
+  <!-- Projects Section with Filter & Carousel/Grid Toggle -->
+  <section id="projects" class="hidden">
     <div class="container">
       <h2 class="section-title">Projects</h2>
       <p class="section-subtitle">A few things I've built.</p>
-      <div class="projects-grid" id="projectsGrid"></div>
+      <div class="projects-header">
+        <div class="project-controls">
+          <button class="btn active" data-filter="all">All</button>
+          <button class="btn" data-filter="starred">★ Starred</button>
+          <button class="btn" data-filter="unstarred">Other</button>
+          <button class="btn btn-accent" id="viewToggleBtn">Switch to Grid View</button>
+        </div>
+      </div>
+      <div class="projects-container" id="projectsContainer"></div>
     </div>
   </section>
 
-  <section id="experience" class="hidden reveal">
+  <section id="experience" class="hidden">
     <div class="container">
       <h2 class="section-title">Experience</h2>
       <div class="timeline" id="timeline"></div>
     </div>
   </section>
 
-  <section id="contact" class="hidden reveal">
+  <section id="contact" class="hidden">
     <div class="container">
       <h2 class="section-title">Get in touch</h2>
       <div class="contact-grid" id="contactGrid"></div>
@@ -109,6 +115,7 @@
 
 </div>
 
+<div id="toastContainer"></div>
 <script src="/js/main.js"></script>
 </body>
 </html>

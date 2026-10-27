@@ -4,31 +4,25 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Portfolio</title>
+
 <meta name="description" content="Personal portfolio — projects, skills, and experience." />
+<meta name="theme-color" content="#e6e7ee" />
+
 <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="pre-reveal">
 
 <div id="introScreen">
-  <div class="intro-avatar-wrap">
-    <div class="intro-spinner"></div>
-    <img id="introAvatarImg" src="" alt="" style="display:none" />
+  <div class="intro-ring-wrap">
+    <svg class="intro-ring" viewBox="0 0 120 120">
+      <circle class="intro-ring-track" cx="60" cy="60" r="54" />
+      <circle class="intro-ring-progress" cx="60" cy="60" r="54" />
+    </svg>
+    <div class="intro-avatar"><img id="introAvatarImg" src="" alt="" style="display:none" /></div>
   </div>
   <div class="intro-name" id="introName"></div>
   <div class="intro-title" id="introTitle"></div>
   <div class="intro-word">Portfolio</div>
-</div>
-
-<div id="storyModal">
-  <div class="story-content-box">
-    <div class="story-header-bar" id="storyProgressSegments"></div>
-    <div class="story-media-wrap" id="storyMediaWrap"></div>
-    <div class="story-caption-box" id="storyCaption" style="display:none;"></div>
-    <div class="story-footer-bar">
-      <span id="storyTimestamp"></span>
-      <button class="btn" id="closeStoryBtn" style="padding:4px 12px; font-size:0.75rem;">Close</button>
-    </div>
-  </div>
 </div>
 
 <div id="mainContent">
@@ -47,13 +41,9 @@
     </div>
   </nav>
 
-  <header class="hero container">
-    <div class="avatar-container" id="avatarContainer">
-      <div class="avatar-ring" id="avatarRing">
-        <div class="avatar-frame">
-          <img id="avatarImg" src="" alt="" style="display:none" />
-        </div>
-      </div>
+  <header class="hero container reveal">
+    <div class="avatar-frame" id="avatarFrame">
+      <img id="avatarImg" src="" alt="" style="display:none" />
     </div>
     <h1 id="heroName">&nbsp;</h1>
     <div class="title" id="heroTitle"></div>
@@ -62,7 +52,7 @@
     <div class="social-row" id="socialRow"></div>
   </header>
 
-  <section id="about" class="hidden">
+  <section id="about" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">About</h2>
       <div class="card about-card">
@@ -71,7 +61,7 @@
     </div>
   </section>
 
-  <section id="skills" class="hidden">
+  <section id="skills" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Skills</h2>
       <p class="section-subtitle">What I work with day to day.</p>
@@ -79,32 +69,22 @@
     </div>
   </section>
 
-  <section id="projects" class="hidden">
+  <section id="projects" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Projects</h2>
       <p class="section-subtitle">A few things I've built.</p>
-      <div class="projects-header">
-        <div class="project-controls">
-          <button class="btn active" data-filter="all">All</button>
-          <button class="btn" data-filter="starred">★ Starred</button>
-          <button class="btn" data-filter="unstarred">Other</button>
-          <button class="icon-btn" id="viewToggleBtn" title="Switch to Grid View" style="margin: 0 auto; width: 50px; height: 50px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="projects-container" id="projectsContainer"></div>
+      <div class="projects-grid" id="projectsGrid"></div>
     </div>
   </section>
 
-  <section id="experience" class="hidden">
+  <section id="experience" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Experience</h2>
       <div class="timeline" id="timeline"></div>
     </div>
   </section>
 
-  <section id="contact" class="hidden">
+  <section id="contact" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Get in touch</h2>
       <div class="contact-grid" id="contactGrid"></div>
@@ -117,8 +97,6 @@
 
 </div>
 
-<div id="toastContainer"></div>
 <script src="/js/main.js"></script>
 </body>
 </html>
-

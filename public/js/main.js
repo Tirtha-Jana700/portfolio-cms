@@ -11,12 +11,14 @@
   };
 
   function iconFor(key) { return ICONS[key] || ICONS.website; }
+
   function el(tag, cls, html) {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
     if (html !== undefined) node.innerHTML = html;
     return node;
   }
+
   function escapeHtml(str) {
     const d = document.createElement("div");
     d.textContent = str == null ? "" : String(str);
@@ -27,96 +29,22 @@
     try {
       const res = await fetch("/api/portfolio", { cache: "no-store" });
       return await res.json();
-    } catch (e) { return null; }
-  }
-
-  // --- Story System with Video & Caption Support ---
-  let currentStories = [];
-  let storyIndex = 0;
-  let storyTimer = null;
-
-  function initStories(stories) {
-    currentStories = stories || [];
-    const ring = document.getElementById("avatarRing");
-    const container = document.getElementById("avatarContainer");
-    if (!currentStories.length) {
-      ring.classList.add("watched");
-      container.style.cursor = "default";
-      return;
-    }
-    container.addEventListener("click", () => {
-      if (!currentStories.length) return;
-      ring.classList.add("watched");
-      openStoryModal(0);
-    });
-  }
-
-  function openStoryModal(index) {
-    storyIndex = index;
-    document.getElementById("storyModal").classList.add("active");
-    renderStorySlide();
-  }
-
-  function renderStorySlide() {
-    if (storyIndex >= currentStories.length) {
-      closeStoryModal();
-      return;
-    }
-    const story = currentStories[storyIndex];
-    const mediaWrap = document.getElementById("storyMediaWrap");
-    const isVideo = story.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
-
-    if (isVideo) {
-      mediaWrap.innerHTML = `<video src="${escapeHtml(story.media_url)}" autoplay playsinline controls></video>`;
-    } else {
-      mediaWrap.innerHTML = `<img src="${escapeHtml(story.media_url)}" alt="Story" />`;
-    }
-
-    const captionEl = document.getElementById("storyCaption");
-    if (story.caption) {
-      captionEl.textContent = story.caption;
-      captionEl.style.display = "block";
-    } else {
-      captionEl.style.display = "none";
-    }
-
-    document.getElementById("storyTimestamp").textContent = new Date(story.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-
-    const progressSegments = document.getElementById("storyProgressSegments");
-    progressSegments.innerHTML = "";
-    currentStories.forEach((_, i) => {
-      const seg = el("div", "story-progress-segment");
-      const fill = el("div", "story-progress-fill");
-      if (i <= storyIndex) fill.style.width = "100%";
-      seg.appendChild(fill);
-      progressSegments.appendChild(seg);
-    });
-
-    clearTimeout(storyTimer);
-    if (!isVideo) {
-      storyTimer = setTimeout(() => {
-        storyIndex++;
-        renderStorySlide();
-      }, 5000);
+    } catch (e) {
+      console.error("Failed to load portfolio", e);
+      return null;
     }
   }
 
-  function closeStoryModal() {
-    clearTimeout(storyTimer);
-    document.getElementById("storyModal").classList.remove("active");
-  }
-
-  document.getElementById("closeStoryBtn").addEventListener("click", closeStoryModal);
-
-  // --- Render Sections ---
   function renderHero(p) {
-    document.getElementById("heroName").textContent = p.full_name || "";
+    const name = p.full_name || "";
+    document.getElementById("heroName").textContent = name || "";
     document.getElementById("heroTitle").textContent = p.title || "";
     document.getElementById("heroTagline").textContent = p.tagline || "";
 
     if (p.avatar_url) {
       const img = document.getElementById("avatarImg");
       img.src = p.avatar_url;
+      img.alt = name;
       img.style.display = "block";
     }
 
@@ -140,6 +68,7 @@
       if (p[field]) {
         const a = el("a", "icon-btn", iconFor(icon));
         a.href = p[field]; a.target = "_blank"; a.rel = "noopener";
+        a.title = icon;
         social.appendChild(a);
       }
     });
@@ -157,64 +86,27 @@
     const grid = document.getElementById("skillsGrid");
     grid.innerHTML = "";
     if (!skills.length) { section.classList.add("hidden"); return; }
-
     skills.forEach(s => {
       const level = Math.max(0, Math.min(100, Number(s.level) || 0));
       const card = el("div", "card skill-card");
       card.innerHTML = `
         <div class="skill-name"><span>${escapeHtml(s.name)}</span><span>${level}%</span></div>
-        <div class="skill-track"><div class="skill-fill" data-level="${level}"></div></div>
+        <div class="skill-track"><div class="skill-fill" data-level="${level}" style="width:0%"></div></div>
       `;
       grid.appendChild(card);
     });
     section.classList.remove("hidden");
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.querySelectorAll(".skill-fill").forEach(fill => {
-            fill.style.width = fill.dataset.level + "%";
-          });
-        }
-      });
-    }, { threshold: 0.2 });
-    observer.observe(section);
   }
-
-  // --- Projects with Star Filter & Icon View Toggle ---
-  let allProjects = [];
-  let currentFilter = "all";
-  let currentView = "carousel";
 
   function renderProjects(projects) {
-    allProjects = projects || [];
     const section = document.getElementById("projects");
-    if (!allProjects.length) { section.classList.add("hidden"); return; }
-    section.classList.remove("hidden");
-    buildProjectsUI();
-  }
-
-  function buildProjectsUI() {
-    const container = document.getElementById("projectsContainer");
-    container.innerHTML = "";
-
-    let filtered = allProjects;
-    if (currentFilter === "starred") filtered = allProjects.filter(p => Number(p.starred) === 1);
-    if (currentFilter === "unstarred") filtered = allProjects.filter(p => Number(p.starred) !== 1);
-
-    if (!filtered.length) {
-      container.innerHTML = '<p class="empty-note" style="text-align:center; padding:30px;">No projects found.</p>';
-      return;
-    }
-
-    const wrapper = el("div", currentView === "carousel" ? "projects-carousel" : "projects-grid");
-    filtered.forEach(p => {
+    const grid = document.getElementById("projectsGrid");
+    grid.innerHTML = "";
+    if (!projects.length) { section.classList.add("hidden"); return; }
+    projects.forEach(p => {
       const tags = (p.tech_stack || "").split(",").map(t => t.trim()).filter(Boolean);
       const card = el("div", "card project-card");
       let html = "";
-      if (Number(p.starred) === 1) {
-        html += `<div class="star-badge" title="Popular Project">★</div>`;
-      }
       if (p.image_url) {
         html += `<div class="project-image"><img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.title)}" /></div>`;
       }
@@ -228,32 +120,10 @@
         </div>
       </div>`;
       card.innerHTML = html;
-      wrapper.appendChild(card);
+      grid.appendChild(card);
     });
-    container.appendChild(wrapper);
+    section.classList.remove("hidden");
   }
-
-  document.querySelectorAll("[data-filter]").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      document.querySelectorAll("[data-filter]").forEach(b => b.classList.remove("active"));
-      e.target.classList.add("active");
-      currentFilter = e.target.dataset.filter;
-      buildProjectsUI();
-    });
-  });
-
-  document.getElementById("viewToggleBtn").addEventListener("click", () => {
-    currentView = currentView === "carousel" ? "grid" : "carousel";
-    const btn = document.getElementById("viewToggleBtn");
-    if (currentView === "grid") {
-      btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>';
-      btn.title = "Switch to Carousel View";
-    } else {
-      btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
-      btn.title = "Switch to Grid View";
-    }
-    buildProjectsUI();
-  });
 
   function renderExperience(items) {
     const section = document.getElementById("experience");
@@ -262,9 +132,10 @@
     if (!items.length) { section.classList.add("hidden"); return; }
     items.forEach(x => {
       const period = [x.start_date, x.end_date].filter(Boolean).join(" – ");
+      const typeLabel = x.type === "education" ? "Student" : "Work";
       const item = el("div", "card timeline-item");
       item.innerHTML = `
-        <div class="timeline-top"><span class="badge type-badge">${x.type === "education" ? "Student" : "Work"}</span></div>
+        <div class="timeline-top"><span class="badge type-badge type-${escapeHtml(x.type || "work")}">${typeLabel}</span></div>
         <div class="role">${escapeHtml(x.role)}</div>
         ${x.organization ? `<div class="org">${escapeHtml(x.organization)}</div>` : ""}
         ${period ? `<div class="period">${escapeHtml(period)}</div>` : ""}
@@ -281,41 +152,80 @@
     grid.innerHTML = "";
     const items = [];
     if (p.email) items.push(["Email", p.email, "mailto:" + p.email]);
-    if (p.location) {
-      items.push(["Location", p.location, `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.location)}`]);
-    }
+    if (p.location) items.push(["Location", p.location, "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.location)]);
     if (!items.length) { section.classList.add("hidden"); return; }
     items.forEach(([label, value, href]) => {
       const card = el("div", "card contact-card");
-      card.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></a>`;
+      const inner = `<div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div>`;
+      const a = el("a", "contact-link", inner);
+      a.href = href;
+      if (href.startsWith("http")) { a.target = "_blank"; a.rel = "noopener"; }
+      card.appendChild(a);
       grid.appendChild(card);
     });
     section.classList.remove("hidden");
   }
 
   function renderFooter(p) {
-    document.getElementById("footerText").textContent = p.full_name ? `© ${new Date().getFullYear()} ${p.full_name}` : `© ${new Date().getFullYear()}`;
+    const year = new Date().getFullYear();
+    const name = p.full_name || "";
+    document.getElementById("footerText").textContent = name ? `© ${year} ${name}` : `© ${year}`;
   }
 
-  // --- 2. Accurate Scroll Spy Physics ---
-  function initNavIndicator() {
+  function initScrollReveal() {
+    const targets = document.querySelectorAll(".reveal");
+    if (!("IntersectionObserver" in window) || !targets.length) {
+      targets.forEach(t => t.classList.add("in-view"));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        entry.target.classList.toggle("in-view", entry.isIntersecting);
+      });
+    }, { threshold: 0.15 });
+    targets.forEach(t => io.observe(t));
+  }
+
+  function initSkillsReveal() {
+    const section = document.getElementById("skills");
+    if (!section || !("IntersectionObserver" in window)) {
+      document.querySelectorAll(".skill-fill").forEach(f => { f.style.width = f.dataset.level + "%"; });
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const fills = entry.target.querySelectorAll(".skill-fill");
+        if (entry.isIntersecting) {
+          fills.forEach((f, i) => setTimeout(() => { f.style.width = f.dataset.level + "%"; }, i * 70));
+        } else {
+          fills.forEach(f => { f.style.width = "0%"; });
+        }
+      });
+    }, { threshold: 0.3 });
+    io.observe(section);
+  }
+
+  // ---------- Nav: Fixed Bouncy Pill Switcher Physics ----------
+
+  function initNav() {
     const navLinks = document.getElementById("navLinks");
     const indicator = document.getElementById("navIndicator");
     const links = Array.from(document.querySelectorAll(".nav-link"));
-    const sections = links.map(l => document.querySelector(l.getAttribute("href"))).filter(Boolean);
 
-    function moveIndicator(link, animate) {
+    function positionIndicator(link) {
       if (!link) return;
       const lRect = link.getBoundingClientRect();
-      const bRect = navLinks.getBoundingClientRect();
+      const pRect = navLinks.getBoundingClientRect();
       indicator.style.width = lRect.width + "px";
       indicator.style.height = lRect.height + "px";
-      indicator.style.left = (lRect.left - bRect.left) + "px";
-      indicator.style.top = (lRect.top - bRect.top) + "px";
+      indicator.style.left = (lRect.left - pRect.left) + "px";
+      indicator.style.top = (lRect.top - pRect.top) + "px";
+    }
 
+    function setActive(link, animate) {
       links.forEach(l => l.classList.remove("active"));
       link.classList.add("active");
-
+      positionIndicator(link);
       if (animate) {
         link.classList.remove("bounce");
         void link.offsetWidth;
@@ -324,57 +234,83 @@
     }
 
     links.forEach(link => {
-      link.addEventListener("click", (e) => {
-        moveIndicator(link, true);
-      });
+      link.addEventListener("click", () => setActive(link, true));
     });
+
+    // Accurate scroll spy using scroll offset calculation
+    const sections = links.map(l => {
+      const id = l.getAttribute("href").substring(1);
+      return document.getElementById(id);
+    }).filter(Boolean);
 
     window.addEventListener("scroll", () => {
-      let scrollPos = window.scrollY + 200;
-      let activeIndex = 0;
-      sections.forEach((sec, idx) => {
-        if (sec.offsetTop <= scrollPos) {
-          activeIndex = idx;
+      const scrollPos = window.scrollY + 140;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const sec = sections[i];
+        if (sec && !sec.classList.contains("hidden") && sec.offsetTop <= scrollPos) {
+          const currentActive = links.find(l => l.getAttribute("href") === "#" + sec.id);
+          if (currentActive && !currentActive.classList.contains("active")) {
+            setActive(currentActive, false);
+          }
+          break;
         }
-      });
-      moveIndicator(links[activeIndex], false);
+      }
     });
 
-    if (links.length) moveIndicator(links[0], false);
+    const initialLink = links[0];
+    if (initialLink) setActive(initialLink, false);
+    window.addEventListener("resize", () => {
+      const active = document.querySelector(".nav-link.active") || links[0];
+      if (active) positionIndicator(active);
+    });
   }
 
   function runIntro(profile) {
     const introScreen = document.getElementById("introScreen");
     const mainContent = document.getElementById("mainContent");
-    if (profile.full_name) document.getElementById("introName").textContent = profile.full_name;
-    if (profile.title) document.getElementById("introTitle").textContent = profile.title;
+    const introName = document.getElementById("introName");
+    const introTitle = document.getElementById("introTitle");
+    const introAvatarImg = document.getElementById("introAvatarImg");
+
+    if (profile.full_name) introName.textContent = profile.full_name;
+    if (profile.title) introTitle.textContent = profile.title;
     if (profile.avatar_url) {
-      const im = document.getElementById("introAvatarImg");
-      im.src = profile.avatar_url;
-      im.style.display = "block";
+      introAvatarImg.src = profile.avatar_url;
+      introAvatarImg.style.display = "block";
     }
 
     setTimeout(() => {
-      introScreen.classList.add("intro-zoom");
-      document.body.classList.remove("pre-reveal");
-      mainContent.classList.add("revealed");
-      initNavIndicator();
-      setTimeout(() => { introScreen.style.display = "none"; }, 800);
-    }, 2500);
+      introScreen.classList.add("intro-ready");
+      setTimeout(() => {
+        introScreen.classList.add("intro-zoom");
+        revealMain(mainContent);
+        setTimeout(() => { introScreen.style.display = "none"; }, 950);
+      }, 420);
+    }, 500);
   }
 
-  document.addEventListener("DOMContentLoaded", async () => {
-    const data = await fetchPortfolio();
-    const profile = (data && data.profile) || {};
-    renderHero(profile);
-    initStories((data && data.stories) || []);
-    renderAbout(profile);
-    renderSkills((data && data.skills) || []);
-    renderProjects((data && data.projects) || []);
-    renderExperience((data && data.experience) || []);
-    renderContact(profile);
-    renderFooter(profile);
-    runIntro(profile);
+  function revealMain(mainContent) {
+    document.body.classList.remove("pre-reveal");
+    mainContent.classList.add("revealed");
+    Array.from(mainContent.children).forEach((child, i) => {
+      child.style.animationDelay = (i * 0.12) + "s";
+    });
+    initScrollReveal();
+    initSkillsReveal();
+    initNav();
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    fetchPortfolio().then(data => {
+      const profile = (data && data.profile) || {};
+      renderHero(profile);
+      renderAbout(profile);
+      renderSkills((data && data.skills) || []);
+      renderProjects((data && data.projects) || []);
+      renderExperience((data && data.experience) || []);
+      renderContact(profile);
+      renderFooter(profile);
+      runIntro(profile);
+    });
   });
 })();
-

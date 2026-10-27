@@ -2,56 +2,62 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow, noarchive" />
 <title>Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="/css/style.css" />
 <link rel="stylesheet" href="admin.css" />
 </head>
-<body>
+<body class="bg-neumorphicBg text-[#2c2f45] font-sans min-h-screen">
 
-<div class="login-wrap" id="loginWrap">
-  <div class="card login-card">
-    <h1>Admin</h1>
-    <p>Enter your password to manage your portfolio.</p>
+<!-- Login Screen -->
+<div class="min-h-screen flex items-center justify-center p-6" id="loginWrap">
+  <div class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-8 w-full max-w-[360px] text-center">
+    <h1 class="text-xl font-bold mb-1">Admin</h1>
+    <p class="text-[#5f7291] text-sm mb-6">Enter your password to manage your portfolio.</p>
     <form id="loginForm">
-      <div class="field">
-        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required />
+      <div class="mb-4">
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brandAccent" />
       </div>
-      <button type="submit" class="btn btn-accent" style="width:100%; justify-content:center;">Log in</button>
-      <div class="login-error" id="loginError"></div>
+      <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-sm px-6 py-3 cursor-pointer transition-all hover:-translate-y-0.5">Log in</button>
+      <div class="text-[#c0293a] text-xs min-h-[18px] mt-2.5" id="loginError"></div>
     </form>
   </div>
 </div>
 
-<div class="admin-shell" id="adminShell">
-  <div class="admin-topbar">
-    <div class="container admin-topbar-inner">
-      <strong>Site Admin</strong>
-      <button class="btn" id="logoutBtn">Log out</button>
+<!-- Admin Dashboard Shell -->
+<div class="hidden" id="adminShell">
+  <div class="sticky top-0 z-20 bg-neumorphicBg/90 backdrop-blur-md py-3.5">
+    <div class="max-w-[1080px] mx-auto px-6">
+      <div class="bg-neumorphicBg rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] py-2.5 px-6 flex items-center justify-between">
+        <strong class="text-sm font-bold">Site Admin</strong>
+        <button class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#2c2f45] font-semibold text-xs px-5 py-2 cursor-pointer transition-all hover:-translate-y-0.5" id="logoutBtn">Log out</button>
+      </div>
     </div>
   </div>
 
-  <div class="container">
-    <div class="admin-tabs">
-      <button class="admin-tab active" data-tab="profile">Profile</button>
-      <button class="admin-tab" data-tab="skills">Skills</button>
-      <button class="admin-tab" data-tab="projects">Projects</button>
-      <button class="admin-tab" data-tab="experience">Experience</button>
-      <button class="admin-tab" data-tab="stories">Stories</button>
+  <div class="max-w-[1080px] mx-auto px-6 py-6">
+    <!-- Tabs Navigation -->
+    <div class="flex gap-2 flex-wrap mb-7">
+      <button class="bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] py-2.5 px-5 font-semibold text-xs text-[#5f7291] cursor-pointer transition-all admin-tab active shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] text-brandAccent" data-tab="profile">Profile</button>
+      <button class="bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] py-2.5 px-5 font-semibold text-xs text-[#5f7291] cursor-pointer transition-all admin-tab" data-tab="skills">Skills</button>
+      <button class="bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] py-2.5 px-5 font-semibold text-xs text-[#5f7291] cursor-pointer transition-all admin-tab" data-tab="projects">Projects</button>
+      <button class="bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] py-2.5 px-5 font-semibold text-xs text-[#5f7291] cursor-pointer transition-all admin-tab" data-tab="experience">Experience</button>
+      <button class="bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] py-2.5 px-5 font-semibold text-xs text-[#5f7291] cursor-pointer transition-all admin-tab" data-tab="stories">Stories (24h)</button>
     </div>
 
-    <!-- Profile Tab -->
+    <!-- Profile Panel -->
     <div class="admin-panel active" id="panel-profile">
-      <form id="profileForm" class="card">
-        <div class="form-grid">
-          <div class="field"><label>Full name</label><input name="full_name" /></div>
-          <div class="field"><label>Title</label><input name="title" /></div>
-          <div class="field span-2"><label>Tagline</label><input name="tagline" /></div>
-          <div class="field span-2"><label>Bio</label><textarea name="bio" rows="5"></textarea></div>
+      <form id="profileForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Full name</label><input name="full_name" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Title</label><input name="title" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div class="md:col-span-2"><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Tagline</label><input name="tagline" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div class="md:col-span-2"><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Bio</label><textarea name="bio" rows="5" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm resize-y"></textarea></div>
 
-          <div class="field span-2">
-            <label>Avatar Image</label>
+          <div class="md:col-span-2">
+            <label class="text-xs font-bold text-[#5f7291] block mb-1.5">Avatar Image / Video</label>
             <input type="hidden" name="avatar_url" id="avatarUrlInput" />
             <div class="file-dropzone">
               <span class="file-dropzone-text">Tap to choose photo or video</span>
@@ -61,50 +67,50 @@
             <div class="preview-container" id="avatarPreviewContainer"></div>
           </div>
 
-          <div class="field"><label>Resume URL</label><input name="resume_url" /></div>
-          <div class="field"><label>Email</label><input name="email" type="email" /></div>
-          <div class="field span-2"><label>Location</label><input name="location" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Resume URL</label><input name="resume_url" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Email</label><input name="email" type="email" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div class="md:col-span-2"><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Location</label><input name="location" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
 
-          <div class="field"><label>GitHub URL</label><input name="github_url" /></div>
-          <div class="field"><label>LinkedIn URL</label><input name="linkedin_url" /></div>
-          <div class="field"><label>Twitter / X URL</label><input name="twitter_url" /></div>
-          <div class="field"><label>Instagram URL</label><input name="instagram_url" /></div>
-          <div class="field"><label>YouTube URL</label><input name="youtube_url" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">GitHub URL</label><input name="github_url" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">LinkedIn URL</label><input name="linkedin_url" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Twitter / X URL</label><input name="twitter_url" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Instagram URL</label><input name="instagram_url" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">YouTube URL</label><input name="youtube_url" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
         </div>
-        <div class="form-actions" style="margin-top:20px;">
-          <button type="submit" class="btn btn-accent">Save profile</button>
+        <div class="mt-6">
+          <button type="submit" class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-sm px-6 py-3 cursor-pointer">Save profile</button>
         </div>
       </form>
     </div>
 
-    <!-- Skills Tab -->
+    <!-- Skills Panel -->
     <div class="admin-panel" id="panel-skills">
-      <div class="item-list" id="skillsList"></div>
-      <form id="skillForm" class="card">
+      <div class="flex flex-col gap-4 mb-7" id="skillsList"></div>
+      <form id="skillForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
         <input type="hidden" name="id" />
-        <div class="form-grid">
-          <div class="field"><label>Skill name</label><input name="name" required /></div>
-          <div class="field"><label>Category</label><input name="category" /></div>
-          <div class="field"><label>Level (0–100)</label><input name="level" type="number" min="0" max="100" value="80" /></div>
-          <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Skill name</label><input name="name" required class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Category</label><input name="category" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Level (0–100)</label><input name="level" type="number" min="0" max="100" value="80" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Order</label><input name="sort_order" type="number" value="0" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-accent">Add / Update skill</button>
-          <button type="button" class="btn" data-cancel-edit>Clear</button>
+        <div class="flex gap-3">
+          <button type="submit" class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-sm px-6 py-3 cursor-pointer">Add / Update skill</button>
+          <button type="button" class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#2c2f45] font-semibold text-sm px-6 py-3 cursor-pointer" data-cancel-edit>Clear</button>
         </div>
       </form>
     </div>
 
-    <!-- Projects Tab -->
+    <!-- Projects Panel -->
     <div class="admin-panel" id="panel-projects">
-      <div class="item-list" id="projectsList"></div>
-      <form id="projectForm" class="card">
+      <div class="flex flex-col gap-4 mb-7" id="projectsList"></div>
+      <form id="projectForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
         <input type="hidden" name="id" />
-        <div class="form-grid">
-          <div class="field span-2"><label>Title</label><input name="title" required /></div>
-          <div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
-          <div class="field span-2">
-            <label>Project Image</label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div class="md:col-span-2"><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Title</label><input name="title" required class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div class="md:col-span-2"><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Description</label><textarea name="description" rows="3" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm"></textarea></div>
+          <div class="md:col-span-2">
+            <label class="text-xs font-bold text-[#5f7291] block mb-1.5">Project Image</label>
             <input type="hidden" name="image_url" id="projectImageUrlInput" />
             <div class="file-dropzone">
               <span class="file-dropzone-text">Tap to choose project image</span>
@@ -113,71 +119,71 @@
             <div class="upload-progress-track" id="projectProgress"><div class="upload-progress-fill"></div></div>
             <div class="preview-container" id="projectPreviewContainer"></div>
           </div>
-          <div class="field span-2"><label>Tech stack (comma separated)</label><input name="tech_stack" /></div>
-          <div class="field"><label>Live URL</label><input name="live_url" /></div>
-          <div class="field"><label>Repo URL</label><input name="repo_url" /></div>
-          <div class="field" style="display:flex; align-items:center; gap:10px; padding-top:24px;">
-            <input type="checkbox" name="starred" value="1" id="starredCheck" style="width:22px; height:22px;" />
-            <label for="starredCheck" style="margin:0; cursor:pointer;">Mark as Popular (Star)</label>
+          <div class="md:col-span-2"><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Tech stack (comma separated)</label><input name="tech_stack" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Live URL</label><input name="live_url" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Repo URL</label><input name="repo_url" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div class="flex items-center gap-3 pt-4">
+            <input type="checkbox" name="starred" value="1" id="starredCheck" class="w-5 h-5 accent-brandAccent" />
+            <label for="starredCheck" class="m-0 cursor-pointer text-sm font-semibold">Mark as Popular (Star)</label>
           </div>
-          <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Order</label><input name="sort_order" type="number" value="0" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-accent">Add / Update project</button>
-          <button type="button" class="btn" data-cancel-edit>Clear</button>
+        <div class="flex gap-3">
+          <button type="submit" class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-sm px-6 py-3 cursor-pointer">Add / Update project</button>
+          <button type="button" class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#2c2f45] font-semibold text-sm px-6 py-3 cursor-pointer" data-cancel-edit>Clear</button>
         </div>
       </form>
     </div>
 
-    <!-- Experience Tab -->
+    <!-- Experience Panel -->
     <div class="admin-panel" id="panel-experience">
-      <div class="item-list" id="experienceList"></div>
-      <form id="experienceForm" class="card">
+      <div class="flex flex-col gap-4 mb-7" id="experienceList"></div>
+      <form id="experienceForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
         <input type="hidden" name="id" />
-        <div class="form-grid">
-          <div class="field">
-            <label>Type</label>
-            <select name="type">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div>
+            <label class="text-xs font-bold text-[#5f7291] block mb-1.5">Type</label>
+            <select name="type" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm">
               <option value="work">Work</option>
               <option value="education">Student</option>
             </select>
           </div>
-          <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
-          <div class="field"><label>Role / Degree</label><input name="role" required /></div>
-          <div class="field"><label>Organization</label><input name="organization" /></div>
-          <div class="field"><label>Start date</label><input name="start_date" /></div>
-          <div class="field"><label>End date</label><input name="end_date" /></div>
-          <div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Order</label><input name="sort_order" type="number" value="0" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Role / Degree</label><input name="role" required class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Organization</label><input name="organization" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Start date</label><input name="start_date" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">End date</label><input name="end_date" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
+          <div class="md:col-span-2"><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Description</label><textarea name="description" rows="3" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm"></textarea></div>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-accent">Add / Update entry</button>
-          <button type="button" class="btn" data-cancel-edit>Clear</button>
+        <div class="flex gap-3">
+          <button type="submit" class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-sm px-6 py-3 cursor-pointer">Add / Update entry</button>
+          <button type="button" class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#2c2f45] font-semibold text-sm px-6 py-3 cursor-pointer" data-cancel-edit>Clear</button>
         </div>
       </form>
     </div>
 
-    <!-- Stories Tab with Video & Caption -->
+    <!-- Stories Panel -->
     <div class="admin-panel" id="panel-stories">
-      <div class="item-list" id="storiesList"></div>
-      <form id="storyForm" class="card">
-        <div class="form-grid">
-          <div class="field span-2">
-            <label>Upload New Story (Photo or Video)</label>
+      <div class="flex flex-col gap-4 mb-7" id="storiesList"></div>
+      <form id="storyForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div class="md:col-span-2">
+            <label class="text-xs font-bold text-[#5f7291] block mb-1.5">Upload New Story (Photo or Video Reel)</label>
             <input type="hidden" name="media_url" id="storyMediaUrlInput" />
             <div class="file-dropzone">
-              <span class="file-dropzone-text">Tap to upload story media</span>
+              <span class="file-dropzone-text">Tap to upload 24h story media</span>
               <input type="file" accept="image/*,video/*" data-upload-target="storyMediaUrlInput" data-progress-id="storyProgress" data-preview-id="storyPreviewContainer" />
             </div>
             <div class="upload-progress-track" id="storyProgress"><div class="upload-progress-fill"></div></div>
             <div class="preview-container" id="storyPreviewContainer"></div>
           </div>
-          <div class="field span-2">
-            <label>Story Caption (Optional)</label>
-            <input name="caption" placeholder="Add a caption for your story..." />
+          <div class="md:col-span-2">
+            <label class="text-xs font-bold text-[#5f7291] block mb-1.5">Story Caption (Optional)</label>
+            <input name="caption" placeholder="Add a caption for your story..." class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" />
           </div>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-accent">Publish Story</button>
+        <div>
+          <button type="submit" class="inline-flex items-center gap-2 bg-neumorphicBg border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-sm px-6 py-3 cursor-pointer">Publish 24h Story</button>
         </div>
       </form>
     </div>
@@ -185,7 +191,7 @@
   </div>
 </div>
 
-<div id="toastContainer"></div>
+<div id="toastContainer" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2500] flex flex-col gap-2 items-center w-full px-4 pointer-events-none"></div>
 <script src="admin.js"></script>
 </body>
 </html>

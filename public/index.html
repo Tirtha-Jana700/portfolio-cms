@@ -1,102 +1,173 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Portfolio</title>
-
-<meta name="description" content="Personal portfolio — projects, skills, and experience." />
-<meta name="theme-color" content="#e6e7ee" />
-
-<link rel="stylesheet" href="/css/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Portfolio</title>
+  <meta name="description" content="Personal portfolio — projects, skills, and experience." />
+  <meta name="theme-color" content="#e6e7ee" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            neumorphicBg: '#e6e7ee',
+            neumorphicDark: '#b7b8c2',
+            neumorphicLight: '#ffffff',
+            brandAccent: '#3a56d4',
+            brandAccent2: '#7b61e0',
+          },
+          transitionTimingFunction: {
+            'apple-spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+            'apple-smooth': 'cubic-bezier(0.22, 1, 0.36, 1)',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
-<body class="pre-reveal">
+<body class="bg-neumorphicBg text-[#2c2f45] font-sans antialiased overflow-x-hidden pre-reveal selection:bg-brandAccent selection:text-white">
 
-<div id="introScreen">
-  <div class="intro-ring-wrap">
-    <svg class="intro-ring" viewBox="0 0 120 120">
-      <circle class="intro-ring-track" cx="60" cy="60" r="54" />
-      <circle class="intro-ring-progress" cx="60" cy="60" r="54" />
-    </svg>
-    <div class="intro-avatar"><img id="introAvatarImg" src="" alt="" style="display:none" /></div>
+  <!-- Intro Splash Screen -->
+  <div id="introScreen" class="fixed inset-0 z-[999] flex flex-col items-center justify-center gap-6 bg-neumorphicBg text-center p-6 transition-all duration-900 origin-center">
+    <div class="relative w-28 h-28 flex items-center justify-center">
+      <svg class="absolute inset-0 w-full h-full -rotate-90 animate-spin" viewBox="0 0 120 120" style="animation-duration: 1.1s;">
+        <circle class="fill-none stroke-neumorphicDark stroke-[4] opacity-55" cx="60" cy="60" r="54" />
+        <circle class="fill-none stroke-brandAccent stroke-[4] stroke-linecap-round transition-all duration-500" cx="60" cy="60" r="54" stroke-dasharray="339" stroke-dashoffset="255" id="introProgressRing" />
+      </svg>
+      <div class="relative z-10 w-21 h-21 rounded-full bg-neumorphicBg p-1.5 shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] overflow-hidden">
+        <img id="introAvatarImg" src="" alt="" class="w-full h-full rounded-full object-cover hidden" />
+      </div>
+    </div>
+    <div class="text-lg font-bold" id="introName"></div>
+    <div class="text-brandAccent font-semibold text-sm -mt-3" id="introTitle"></div>
+    <div class="text-5xl md:text-7xl font-black tracking-tight bg-gradient-to-br from-[#2c2f45] to-brandAccent bg-clip-text text-transparent mt-2">Portfolio</div>
   </div>
-  <div class="intro-name" id="introName"></div>
-  <div class="intro-title" id="introTitle"></div>
-  <div class="intro-word">Portfolio</div>
-</div>
 
-<div id="mainContent">
+  <div id="mainContent" class="opacity-0 transition-opacity duration-700">
 
-  <nav class="nav">
-    <div class="container nav-inner">
-      <div class="nav-brand">Portfolio</div>
-      <div class="nav-links" id="navLinks">
-        <span class="nav-indicator" id="navIndicator"></span>
-        <a href="#about" class="nav-link">About</a>
-        <a href="#skills" class="nav-link">Skills</a>
-        <a href="#projects" class="nav-link">Projects</a>
-        <a href="#experience" class="nav-link">Experience</a>
-        <a href="#contact" class="nav-link">Contact</a>
+    <!-- Sticky Navigation Bar -->
+    <nav class="sticky top-0 z-50 bg-neumorphicBg/90 backdrop-blur-md py-3.5 transition-all">
+      <div class="max-w-[1080px] mx-auto px-6 flex flex-col items-center gap-2.5">
+        <div class="font-extrabold text-lg tracking-tight">Portfolio</div>
+        <div class="relative flex items-center justify-center gap-0.5 p-1 bg-neumorphicBg rounded-full shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]" id="navLinks">
+          <span class="absolute rounded-full bg-neumorphicBg shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] transition-all duration-400 ease-apple-spring pointer-events-none z-0" id="navIndicator"></span>
+          <a href="#about" class="relative z-10 px-3.5 py-2 rounded-full text-xs md:text-sm font-semibold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">About</a>
+          <a href="#skills" class="relative z-10 px-3.5 py-2 rounded-full text-xs md:text-sm font-semibold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">Skills</a>
+          <a href="#projects" class="relative z-10 px-3.5 py-2 rounded-full text-xs md:text-sm font-semibold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">Projects</a>
+          <a href="#experience" class="relative z-10 px-3.5 py-2 rounded-full text-xs md:text-sm font-semibold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">Experience</a>
+          <a href="#contact" class="relative z-10 px-3.5 py-2 rounded-full text-xs md:text-sm font-semibold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">Contact</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section with Instagram Story Ring -->
+    <header class="max-w-[1080px] mx-auto px-6 py-14 text-center reveal">
+      <div class="relative w-40 h-40 mx-auto mb-7 cursor-pointer group" id="avatarFrameWrap">
+        <div class="absolute inset-0 rounded-full p-1 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] animate-pulse transition-all duration-400" id="avatarRing"></div>
+        <div class="absolute inset-2 w-[140px] h-[140px] rounded-full bg-neumorphicBg shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-2 overflow-hidden transition-transform duration-300 ease-apple-spring group-hover:scale-105" id="avatarFrame">
+          <img id="avatarImg" src="" alt="" class="w-full h-full rounded-full object-cover hidden" />
+        </div>
+      </div>
+      <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight mb-2" id="heroName">&nbsp;</h1>
+      <div class="text-brandAccent font-bold text-lg mb-3.5" id="heroTitle"></div>
+      <p class="text-[#5f7291] max-w-[560px] mx-auto mb-7 text-sm md:text-base" id="heroTagline"></p>
+      <div class="flex gap-3 justify-center flex-wrap mb-7" id="heroActions"></div>
+      <div class="flex gap-3 justify-center flex-wrap" id="socialRow"></div>
+    </header>
+
+    <!-- About Section -->
+    <section id="about" class="py-12 hidden reveal">
+      <div class="max-w-[1080px] mx-auto px-6">
+        <h2 class="text-2xl font-extrabold tracking-tight text-center mb-2">About</h2>
+        <div class="max-w-[760px] mx-auto bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7 transition-all">
+          <p class="text-[#5f7291] m-0 whitespace-pre-line text-sm md:text-base leading-relaxed" id="aboutBio"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" class="py-12 hidden reveal">
+      <div class="max-w-[1080px] mx-auto px-6">
+        <h2 class="text-2xl font-extrabold tracking-tight text-center mb-2">Skills</h2>
+        <p class="text-center text-[#5f7291] max-w-[540px] mx-auto mb-8 text-sm">What I work with day to day.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="skillsGrid"></div>
+      </div>
+    </section>
+
+    <!-- Projects Section with Controls, Filter, Auto-scroll & Carousel/Grid Toggle -->
+    <section id="projects" class="py-12 hidden reveal">
+      <div class="max-w-[1080px] mx-auto px-6">
+        <h2 class="text-2xl font-extrabold tracking-tight text-center mb-2">Projects</h2>
+        <p class="text-center text-[#5f7291] max-w-[540px] mx-auto mb-6 text-sm">A few things I've built.</p>
+        
+        <!-- Project Toolbar -->
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+          <div class="flex gap-2">
+            <button type="button" class="px-4 py-2 rounded-full text-xs md:text-sm font-semibold bg-neumorphicBg shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] transition-all filter-btn active text-brandAccent shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]" data-filter="all">All</button>
+            <button type="button" class="px-4 py-2 rounded-full text-xs md:text-sm font-semibold bg-neumorphicBg shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] transition-all filter-btn text-[#5f7291]" data-filter="starred">★ Starred</button>
+          </div>
+          <div class="flex gap-3 items-center">
+            <button type="button" class="w-10 h-10 rounded-full bg-neumorphicBg shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] flex items-center justify-center text-[#5f7291] hover:text-brandAccent transition-all active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]" id="viewToggleBtn" title="Switch View Mode">
+              <svg id="viewIconGrid" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zm0 11h7v7h-7v-7zM3 14h7v7H3v-7z"/></svg>
+              <svg id="viewIconCarousel" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+            </button>
+            <button type="button" class="px-3.5 py-2 rounded-full text-xs font-semibold bg-neumorphicBg shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#5f7291] hover:text-brandAccent transition-all active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]" id="autoScrollToggleBtn">Auto-scroll: Off</button>
+          </div>
+        </div>
+
+        <div class="w-full overflow-hidden relative">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-transform duration-400 ease-apple-smooth" id="projectsGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Experience Section -->
+    <section id="experience" class="py-12 hidden reveal">
+      <div class="max-w-[1080px] mx-auto px-6">
+        <h2 class="text-2xl font-extrabold tracking-tight text-center mb-8">Experience</h2>
+        <div class="max-w-[720px] mx-auto flex flex-col gap-5" id="timeline"></div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-12 hidden reveal">
+      <div class="max-w-[1080px] mx-auto px-6">
+        <h2 class="text-2xl font-extrabold tracking-tight text-center mb-6">Get in touch</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-[760px] mx-auto" id="contactGrid"></div>
+      </div>
+    </section>
+
+    <footer class="text-center py-10 text-[#93a5be] text-xs">
+      <span id="footerText"></span>
+    </footer>
+
+  </div>
+
+  <!-- Instagram Style Story Modal Viewer -->
+  <div id="storyModal" class="fixed inset-0 z-[2000] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden animate-[fadeIn_0.3s_ease]">
+    <div class="relative w-full max-w-[380px] h-[82vh] max-height-[720px] bg-neutral-900 rounded-[28px] overflow-hidden shadow-2xl flex flex-col">
+      <div class="absolute top-3 left-4 right-4 z-10 flex gap-1 h-[3px]" id="storyProgressBars"></div>
+      <div class="absolute top-6 left-4 right-4 z-10 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 text-white font-semibold text-sm">
+          <img id="storyModalAvatar" src="" alt="" class="w-8 h-8 rounded-full object-cover border border-white/20" />
+          <span id="storyModalName" class="drop-shadow">Portfolio</span>
+        </div>
+        <button class="text-white text-2xl font-bold drop-shadow hover:scale-110 transition-transform" id="storyCloseBtn">&times;</button>
+      </div>
+      <div class="flex-1 flex items-center justify-center bg-black relative overflow-hidden" id="storyMediaStage"></div>
+      <div class="absolute bottom-5 left-4 right-4 z-10 text-white text-sm font-medium text-center bg-black/50 backdrop-blur-sm p-3 rounded-xl" id="storyCaptionText"></div>
+      <div class="absolute inset-0 z-5 flex pointer-events-none">
+        <button id="storyPrevBtn" class="flex-1 h-full pointer-events-auto bg-transparent"></button>
+        <button id="storyNextBtn" class="flex-1 h-full pointer-events-auto bg-transparent"></button>
       </div>
     </div>
-  </nav>
+  </div>
 
-  <header class="hero container reveal">
-    <div class="avatar-frame" id="avatarFrame">
-      <img id="avatarImg" src="" alt="" style="display:none" />
-    </div>
-    <h1 id="heroName">&nbsp;</h1>
-    <div class="title" id="heroTitle"></div>
-    <p class="tagline" id="heroTagline"></p>
-    <div class="hero-actions" id="heroActions"></div>
-    <div class="social-row" id="socialRow"></div>
-  </header>
-
-  <section id="about" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">About</h2>
-      <div class="card about-card">
-        <p id="aboutBio"></p>
-      </div>
-    </div>
-  </section>
-
-  <section id="skills" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">Skills</h2>
-      <p class="section-subtitle">What I work with day to day.</p>
-      <div class="skills-grid" id="skillsGrid"></div>
-    </div>
-  </section>
-
-  <section id="projects" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">Projects</h2>
-      <p class="section-subtitle">A few things I've built.</p>
-      <div class="projects-grid" id="projectsGrid"></div>
-    </div>
-  </section>
-
-  <section id="experience" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">Experience</h2>
-      <div class="timeline" id="timeline"></div>
-    </div>
-  </section>
-
-  <section id="contact" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">Get in touch</h2>
-      <div class="contact-grid" id="contactGrid"></div>
-    </div>
-  </section>
-
-  <footer>
-    <span id="footerText"></span>
-  </footer>
-
-</div>
-
-<script src="/js/main.js"></script>
+  <script src="/js/main.js"></script>
 </body>
 </html>
+

@@ -6,9 +6,8 @@ body { min-height: 100vh; }
 .admin-panel { display: none; }
 .admin-panel.active { display: block; }
 
-.item-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: #e6e7ee; border-radius: 26px; box-shadow: 8px 8px 18px #b7b8c2, -8px -8px 18px #ffffff; }
+.item-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; background: #e6e7ee; border-radius: 26px; box-shadow: 6px 6px 14px #b7b8c2, -6px -6px 14px #ffffff; }
 
-/* File upload dropzone styles */
 .file-dropzone {
   position: relative;
   background: #e6e7ee;
@@ -26,9 +25,7 @@ body { min-height: 100vh; }
 }
 .file-dropzone-text { font-size: 0.85rem; color: #5f7291; font-weight: 600; }
 
-.preview-container {
-  display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px;
-}
+.preview-container { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
 .preview-box {
   position: relative;
   width: 100px; height: 100px;
@@ -38,9 +35,7 @@ body { min-height: 100vh; }
   overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
-.preview-box img, .preview-box video {
-  width: 100%; height: 100%; object-fit: cover;
-}
+.preview-box img, .preview-box video { width: 100%; height: 100%; object-fit: cover; }
 .preview-label {
   position: absolute; bottom: 4px; left: 4px; right: 4px;
   background: rgba(0,0,0,0.7); color: #fff; font-size: 0.65rem;
@@ -63,7 +58,6 @@ body { min-height: 100vh; }
   transition: width 0.2s ease;
 }
 
-/* Toast animations */
 .toast {
   background: #e6e7ee;
   box-shadow: 8px 8px 18px #b7b8c2, -8px -8px 18px #ffffff;

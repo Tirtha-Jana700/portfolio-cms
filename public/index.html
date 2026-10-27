@@ -28,46 +28,45 @@
 </head>
 <body class="bg-neumorphicBg text-[#2c2f45] font-sans antialiased overflow-x-hidden pre-reveal selection:bg-brandAccent selection:text-white">
 
-  <!-- Intro Splash Screen -->
-  <div id="introScreen" class="fixed inset-0 z-[999] flex flex-col items-center justify-center gap-6 bg-neumorphicBg text-center p-6 transition-all duration-900 origin-center">
-    <div class="relative w-28 h-28 flex items-center justify-center">
-      <svg class="absolute inset-0 w-full h-full -rotate-90 animate-spin" viewBox="0 0 120 120" style="animation-duration: 1.1s;">
-        <circle class="fill-none stroke-[#b7b8c2] stroke-[4] opacity-50" cx="60" cy="60" r="54" />
-        <circle class="fill-none stroke-brandAccent stroke-[4] stroke-linecap-round transition-all duration-500" cx="60" cy="60" r="54" stroke-dasharray="339" stroke-dashoffset="255" id="introProgressRing" />
+  <!-- Immersive Neumorphic Intro Screen -->
+  <div id="introScreen" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-6 bg-neumorphicBg text-center p-6 transition-all duration-900 origin-center">
+    <div class="relative w-32 h-32 flex items-center justify-center">
+      <svg class="absolute inset-0 w-full h-full -rotate-90 animate-spin" viewBox="0 0 120 120" style="animation-duration: 1.2s;">
+        <circle class="fill-none stroke-[#b7b8c2] stroke-[4] opacity-40" cx="60" cy="60" r="54" />
+        <circle class="fill-none stroke-brandAccent stroke-[4] stroke-linecap-round transition-all duration-600" cx="60" cy="60" r="54" stroke-dasharray="339" stroke-dashoffset="255" id="introProgressRing" />
       </svg>
-      <div class="relative z-10 w-20 h-20 rounded-full bg-neumorphicBg p-1 shadow-[6px_6px_14px_#b7b8c2,-6px_-6px_14px_#ffffff] overflow-hidden flex items-center justify-center">
+      <div class="relative z-10 w-24 h-24 rounded-full bg-neumorphicBg p-1.5 shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] overflow-hidden flex items-center justify-center">
         <img id="introAvatarImg" src="" alt="" class="w-full h-full rounded-full object-cover hidden" />
       </div>
     </div>
-    <div class="text-lg font-bold" id="introName"></div>
-    <div class="text-brandAccent font-semibold text-sm -mt-3" id="introTitle"></div>
-    <div class="text-4xl md:text-6xl font-black tracking-tight bg-gradient-to-br from-[#2c2f45] to-brandAccent bg-clip-text text-transparent mt-2">Portfolio</div>
+    <div class="text-xl font-extrabold tracking-tight" id="introName"></div>
+    <div class="text-brandAccent font-bold text-sm -mt-4" id="introTitle"></div>
+    <div class="text-5xl md:text-7xl font-black tracking-tighter bg-gradient-to-br from-[#2c2f45] to-brandAccent bg-clip-text text-transparent mt-2">Portfolio</div>
   </div>
 
   <div id="mainContent" class="opacity-0 transition-opacity duration-700">
 
     <!-- Scrollable Horizontal Nav Bar -->
-    <nav class="sticky top-0 z-50 bg-neumorphicBg/90 backdrop-blur-md py-3 transition-all">
+    <nav class="sticky top-0 z-50 bg-neumorphicBg/90 backdrop-blur-md py-3.5 transition-all">
       <div class="max-w-[1080px] mx-auto px-4 flex flex-col items-center gap-2">
         <div class="font-extrabold text-base tracking-tight text-[#2c2f45]">Portfolio</div>
-        <div class="w-full max-w-[540px] overflow-x-auto no-scrollbar py-1 px-1">
-          <div class="relative flex items-center justify-start sm:justify-center gap-1 p-1.5 bg-neumorphicBg rounded-full shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] min-w-max mx-auto" id="navLinks">
-            <span class="absolute rounded-full bg-neumorphicBg shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] transition-all duration-300 ease-apple-spring pointer-events-none z-0" id="navIndicator"></span>
-            <a href="#about" class="relative z-10 px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">About</a>
-            <a href="#skills" class="relative z-10 px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">Skills</a>
-            <a href="#projects" class="relative z-10 px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">Projects</a>
-            <a href="#experience" class="relative z-10 px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">Experience</a>
-            <a href="#contact" class="relative z-10 px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-colors hover:text-brandAccent whitespace-nowrap">Contact</a>
+        <div class="w-full overflow-x-auto no-scrollbar py-1 px-2">
+          <div class="flex items-center gap-2 p-1.5 bg-neumorphicBg rounded-full shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] w-max mx-auto" id="navLinks">
+            <a href="#about" class="px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-all hover:text-brandAccent whitespace-nowrap nav-link" data-target="about">About</a>
+            <a href="#skills" class="px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-all hover:text-brandAccent whitespace-nowrap nav-link" data-target="skills">Skills</a>
+            <a href="#projects" class="px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-all hover:text-brandAccent whitespace-nowrap nav-link" data-target="projects">Projects</a>
+            <a href="#experience" class="px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-all hover:text-brandAccent whitespace-nowrap nav-link" data-target="experience">Experience</a>
+            <a href="#contact" class="px-4 py-1.5 rounded-full text-xs font-bold text-[#5f7291] transition-all hover:text-brandAccent whitespace-nowrap nav-link" data-target="contact">Contact</a>
           </div>
         </div>
       </div>
     </nav>
 
-    <!-- Hero Section (Centered Avatar Circle) -->
-    <header class="max-w-[1080px] mx-auto px-6 py-10 text-center reveal">
-      <div class="relative w-36 h-36 mx-auto mb-6 flex items-center justify-center cursor-pointer group" id="avatarFrameWrap">
+    <!-- Hero Section -->
+    <header class="max-w-[1080px] mx-auto px-6 py-12 text-center reveal">
+      <div class="relative w-40 h-40 mx-auto mb-6 flex items-center justify-center cursor-pointer group" id="avatarFrameWrap">
         <div class="absolute inset-0 rounded-full p-1 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] animate-pulse transition-all" id="avatarRing"></div>
-        <div class="relative w-full h-full rounded-full bg-neumorphicBg shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-1.5 overflow-hidden transition-transform duration-300 ease-apple-spring group-hover:scale-105 flex items-center justify-center" id="avatarFrame">
+        <div class="relative w-full h-full rounded-full bg-neumorphicBg shadow-[10px_10px_22px_#b7b8c2,-10px_-10px_22px_#ffffff] p-2 overflow-hidden transition-transform duration-300 ease-apple-spring group-hover:scale-105 flex items-center justify-center" id="avatarFrame">
           <img id="avatarImg" src="" alt="" class="w-full h-full rounded-full object-cover hidden" />
         </div>
       </div>
@@ -79,17 +78,17 @@
     </header>
 
     <!-- About Section -->
-    <section id="about" class="py-10 hidden reveal">
+    <section id="about" class="py-12 hidden reveal">
       <div class="max-w-[1080px] mx-auto px-6">
         <h2 class="text-2xl font-extrabold tracking-tight text-center mb-4">About</h2>
-        <div class="max-w-[760px] mx-auto bg-neumorphicBg rounded-[24px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-6 transition-all">
+        <div class="max-w-[760px] mx-auto bg-neumorphicBg rounded-[28px] shadow-[10px_10px_22px_#b7b8c2,-10px_-10px_22px_#ffffff] p-7 transition-all">
           <p class="text-[#5f7291] m-0 whitespace-pre-line text-sm md:text-base leading-relaxed" id="aboutBio"></p>
         </div>
       </div>
     </section>
 
     <!-- Skills Section -->
-    <section id="skills" class="py-10 hidden reveal">
+    <section id="skills" class="py-12 hidden reveal">
       <div class="max-w-[1080px] mx-auto px-6">
         <h2 class="text-2xl font-extrabold tracking-tight text-center mb-1">Skills</h2>
         <p class="text-center text-[#5f7291] max-w-[540px] mx-auto mb-8 text-xs md:text-sm">What I work with day to day.</p>
@@ -97,13 +96,12 @@
       </div>
     </section>
 
-    <!-- Projects Section with Single-Row Toolbar -->
-    <section id="projects" class="py-10 hidden reveal">
+    <!-- Projects Section -->
+    <section id="projects" class="py-12 hidden reveal">
       <div class="max-w-[1080px] mx-auto px-6">
         <h2 class="text-2xl font-extrabold tracking-tight text-center mb-1">Projects</h2>
         <p class="text-center text-[#5f7291] max-w-[540px] mx-auto mb-6 text-xs md:text-sm">A few things I've built.</p>
         
-        <!-- Single-Row Toolbar -->
         <div class="w-full overflow-x-auto no-scrollbar mb-6 pb-2">
           <div class="flex items-center justify-between gap-4 min-w-max">
             <div class="flex gap-2">
@@ -127,7 +125,7 @@
     </section>
 
     <!-- Experience Section -->
-    <section id="experience" class="py-10 hidden reveal">
+    <section id="experience" class="py-12 hidden reveal">
       <div class="max-w-[1080px] mx-auto px-6">
         <h2 class="text-2xl font-extrabold tracking-tight text-center mb-8">Experience</h2>
         <div class="max-w-[720px] mx-auto flex flex-col gap-5" id="timeline"></div>
@@ -135,7 +133,7 @@
     </section>
 
     <!-- Contact Section -->
-    <section id="contact" class="py-10 hidden reveal">
+    <section id="contact" class="py-12 hidden reveal">
       <div class="max-w-[1080px] mx-auto px-6">
         <h2 class="text-2xl font-extrabold tracking-tight text-center mb-6">Get in touch</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-[760px] mx-auto" id="contactGrid"></div>
@@ -149,7 +147,7 @@
   </div>
 
   <!-- Instagram Story Modal Viewer -->
-  <div id="storyModal" class="fixed inset-0 z-[2000] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+  <div id="storyModal" class="fixed inset-0 z-[20000] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
     <div class="relative w-full max-w-[380px] h-[80vh] max-h-[720px] bg-neutral-900 rounded-[28px] overflow-hidden shadow-2xl flex flex-col">
       <div class="absolute top-3 left-4 right-4 z-10 flex gap-1 h-[3px]" id="storyProgressBars"></div>
       <div class="absolute top-6 left-4 right-4 z-10 flex items-center justify-between">

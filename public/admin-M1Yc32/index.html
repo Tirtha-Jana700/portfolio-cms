@@ -13,9 +13,9 @@
 
 <!-- Login Screen -->
 <div class="min-h-screen flex items-center justify-center p-6" id="loginWrap">
-  <div class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-8 w-full max-w-[360px] text-center">
+  <div class="bg-neumorphicBg rounded-[28px] shadow-[10px_10px_22px_#b7b8c2,-10px_-10px_22px_#ffffff] p-8 w-full max-w-[360px] text-center">
     <h1 class="text-xl font-bold mb-1">Admin</h1>
-    <p class="text-[#5f7291] text-sm mb-6">Enter your password to manage your portfolio.</p>
+    <p class="text-[#5f7291] text-xs mb-6">Enter password to manage portfolio.</p>
     <form id="loginForm">
       <div class="mb-4">
         <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-brandAccent" />
@@ -49,7 +49,7 @@
 
     <!-- Profile Panel -->
     <div class="admin-panel active" id="panel-profile">
-      <form id="profileForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
+      <form id="profileForm" class="bg-neumorphicBg rounded-[28px] shadow-[10px_10px_22px_#b7b8c2,-10px_-10px_22px_#ffffff] p-7">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Full name</label><input name="full_name" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
           <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Title</label><input name="title" class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
@@ -86,7 +86,7 @@
     <!-- Skills Panel -->
     <div class="admin-panel" id="panel-skills">
       <div class="flex flex-col gap-4 mb-7" id="skillsList"></div>
-      <form id="skillForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
+      <form id="skillForm" class="bg-neumorphicBg rounded-[28px] shadow-[10px_10px_22px_#b7b8c2,-10px_-10px_22px_#ffffff] p-7">
         <input type="hidden" name="id" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Skill name</label><input name="name" required class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
@@ -104,7 +104,7 @@
     <!-- Projects Panel -->
     <div class="admin-panel" id="panel-projects">
       <div class="flex flex-col gap-4 mb-7" id="projectsList"></div>
-      <form id="projectForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
+      <form id="projectForm" class="bg-neumorphicBg rounded-[28px] shadow-[10px_10px_22px_#b7b8c2,-10px_-10px_22px_#ffffff] p-7">
         <input type="hidden" name="id" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div class="md:col-span-2"><label class="text-xs font-bold text-[#5f7291] block mb-1.5">Title</label><input name="title" required class="w-full bg-neumorphicBg rounded-xl shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] border-none px-4 py-3 text-sm" /></div>
@@ -138,7 +138,7 @@
     <!-- Experience Panel -->
     <div class="admin-panel" id="panel-experience">
       <div class="flex flex-col gap-4 mb-7" id="experienceList"></div>
-      <form id="experienceForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
+      <form id="experienceForm" class="bg-neumorphicBg rounded-[28px] shadow-[10px_10px_22px_#b7b8c2,-10px_-10px_22px_#ffffff] p-7">
         <input type="hidden" name="id" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div>
@@ -165,7 +165,7 @@
     <!-- Stories Panel -->
     <div class="admin-panel" id="panel-stories">
       <div class="flex flex-col gap-4 mb-7" id="storiesList"></div>
-      <form id="storyForm" class="bg-neumorphicBg rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-7">
+      <form id="storyForm" class="bg-neumorphicBg rounded-[28px] shadow-[10px_10px_22px_#b7b8c2,-10px_-10px_22px_#ffffff] p-7">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div class="md:col-span-2">
             <label class="text-xs font-bold text-[#5f7291] block mb-1.5">Upload New Story (Photo or Video Reel)</label>
@@ -191,7 +191,7 @@
   </div>
 </div>
 
-<div id="toastContainer" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2500] flex flex-col gap-2 items-center w-full px-4 pointer-events-none"></div>
+<div id="toastContainer" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[25000] flex flex-col gap-2 items-center w-full px-4 pointer-events-none"></div>
 <script src="admin.js"></script>
 </body>
 </html>

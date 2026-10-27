@@ -11,14 +11,12 @@
   };
 
   function iconFor(key) { return ICONS[key] || ICONS.website; }
-
   function el(tag, cls, html) {
     const node = document.createElement(tag);
     if (cls) node.className = cls;
     if (html !== undefined) node.innerHTML = html;
     return node;
   }
-
   function escapeHtml(str) {
     const d = document.createElement("div");
     d.textContent = str == null ? "" : String(str);
@@ -56,12 +54,12 @@
     const actions = document.getElementById("heroActions");
     actions.innerHTML = "";
     if (p.resume_url) {
-      const a = el("a", "inline-flex items-center gap-2 bg-[#e6e7ee] border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-xs px-5 py-2.5 cursor-pointer transition-all hover:-translate-y-0.5 active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]", "Download Resume");
+      const a = el("a", "inline-flex items-center gap-2 bg-[#e6e7ee] rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-xs px-5 py-2.5 transition-all hover:-translate-y-0.5 active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]", "Download Resume");
       a.href = p.resume_url; a.target = "_blank"; a.rel = "noopener";
       actions.appendChild(a);
     }
     if (p.email) {
-      const a = el("a", "inline-flex items-center gap-2 bg-[#e6e7ee] border-none rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#2c2f45] font-semibold text-xs px-5 py-2.5 cursor-pointer transition-all hover:-translate-y-0.5 active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]", "Contact Me");
+      const a = el("a", "inline-flex items-center gap-2 bg-[#e6e7ee] rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#2c2f45] font-semibold text-xs px-5 py-2.5 transition-all hover:-translate-y-0.5 active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]", "Contact Me");
       a.href = "#contact";
       actions.appendChild(a);
     }
@@ -84,14 +82,14 @@
     const ring = document.getElementById("avatarRing");
     const stories = globalPortfolioData.stories || [];
     if (!stories.length) {
-      ring.style.display = "none";
+      if (ring) ring.style.display = "none";
       return;
     }
     const seenKey = "portfolio_stories_seen_" + (stories.map(s => s.id).join("_"));
     if (localStorage.getItem(seenKey) === "true") {
-      ring.className = "absolute inset-0 rounded-full p-1 bg-[#b7b8c2] transition-all";
+      if (ring) ring.className = "absolute inset-0 rounded-full p-1 bg-[#b7b8c2] transition-all";
     } else {
-      ring.className = "absolute inset-0 rounded-full p-1 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] animate-pulse transition-all";
+      if (ring) ring.className = "absolute inset-0 rounded-full p-1 bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] animate-pulse transition-all";
     }
   }
 
@@ -109,9 +107,9 @@
     if (!skills.length) { section.classList.add("hidden"); return; }
     skills.forEach(s => {
       const level = Math.max(0, Math.min(100, Number(s.level) || 0));
-      const card = el("div", "bg-[#e6e7ee] rounded-[22px] shadow-[6px_6px_14px_#b7b8c2,-6px_-6px_14px_#ffffff] p-5 transition-all");
+      const card = el("div", "bg-[#e6e7ee] rounded-[24px] shadow-[6px_6px_14px_#b7b8c2,-6px_-6px_14px_#ffffff] p-5 transition-all");
       card.innerHTML = `
-        <div class="flex justify-between font-bold mb-2.5 text-sm"><span>${escapeHtml(s.name)}</span><span class="text-[#93a5be]">${level}%</span></div>
+        <div class="flex justify-between font-bold mb-2 text-sm"><span>${escapeHtml(s.name)}</span><span class="text-[#93a5be]">${level}%</span></div>
         <div class="h-2 rounded-full shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] overflow-hidden">
           <div class="h-full rounded-full bg-gradient-to-r from-brandAccent to-brandAccent2 transition-all duration-1000 ease-apple-spring skill-fill" data-level="${level}" style="width:0%"></div>
         </div>
@@ -141,18 +139,18 @@
     filtered.forEach(p => {
       const isStarred = Number(p.starred) === 1;
       const tags = (p.tech_stack || "").split(",").map(t => t.trim()).filter(Boolean);
-      const card = el("div", `bg-[#e6e7ee] rounded-[24px] shadow-[6px_6px_14px_#b7b8c2,-6px_-6px_14px_#ffffff] p-0 overflow-hidden relative transition-all duration-300 hover:-translate-y-1 project-card ${isStarred ? "starred-card" : ""}`);
+      const card = el("div", `bg-[#e6e7ee] rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-0 overflow-hidden relative transition-all duration-300 hover:-translate-y-1 project-card ${isStarred ? "starred-card" : ""}`);
       let html = "";
       if (p.image_url) {
-        html += `<div class="aspect-[16/10] bg-[#e6e7ee] shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] m-3 rounded-[16px] overflow-hidden"><img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover" /></div>`;
+        html += `<div class="aspect-[16/10] bg-[#e6e7ee] shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff] m-3.5 rounded-[18px] overflow-hidden"><img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover" /></div>`;
       }
       html += `<div class="p-5 pt-1">
         <h3 class="text-base font-bold mb-1.5">${escapeHtml(p.title)}</h3>
-        <p class="text-[#5f7291] text-xs mb-3 leading-relaxed">${escapeHtml(p.description || "")}</p>
+        <p class="text-[#5f7291] text-xs mb-3.5 leading-relaxed">${escapeHtml(p.description || "")}</p>
         <div class="flex flex-wrap gap-1 mb-4">${tags.map(t => `<span class="inline-block bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b7b8c2,inset_-2px_-2px_5px_#ffffff] text-[#5f7291] rounded-full px-3 py-0.5 text-[0.7rem] font-semibold">${escapeHtml(t)}</span>`).join("")}</div>
         <div class="flex gap-2">
-          ${p.live_url ? `<a class="inline-flex items-center gap-1.5 bg-[#e6e7ee] rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-xs px-3.5 py-1.5 transition-all hover:-translate-y-0.5 active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live</a>` : ""}
-          ${p.repo_url ? `<a class="inline-flex items-center gap-1.5 bg-[#e6e7ee] rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#2c2f45] font-semibold text-xs px-3.5 py-1.5 transition-all hover:-translate-y-0.5 active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">Code</a>` : ""}
+          ${p.live_url ? `<a class="inline-flex items-center gap-1.5 bg-[#e6e7ee] rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#3a56d4] font-semibold text-xs px-4 py-2 transition-all hover:-translate-y-0.5 active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live</a>` : ""}
+          ${p.repo_url ? `<a class="inline-flex items-center gap-1.5 bg-[#e6e7ee] rounded-full shadow-[4px_4px_9px_#b7b8c2,-4px_-4px_9px_#ffffff] text-[#2c2f45] font-semibold text-xs px-4 py-2 transition-all hover:-translate-y-0.5 active:shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">Code</a>` : ""}
         </div>
       </div>`;
       card.innerHTML = html;
@@ -231,9 +229,9 @@
     items.forEach(x => {
       const period = [x.start_date, x.end_date].filter(Boolean).join(" – ");
       const typeLabel = x.type === "education" ? "Student" : "Work";
-      const item = el("div", "bg-[#e6e7ee] rounded-[24px] shadow-[6px_6px_14px_#b7b8c2,-6px_-6px_14px_#ffffff] p-6 transition-all");
+      const item = el("div", "bg-[#e6e7ee] rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-6 transition-all");
       item.innerHTML = `
-        <div class="mb-2"><span class="inline-block bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b7b8c2,inset_-2px_-2px_5px_#ffffff] text-[#5f7291] rounded-full px-3 py-0.5 text-[0.7rem] font-bold ${x.type === "education" ? "text-brandAccent" : ""}">${typeLabel}</span></div>
+        <div class="mb-2"><span class="inline-block bg-[#e6e7ee] shadow-[inset_2px_2px_5px_#b7b8c2,inset_-2px_-2px_5px_#ffffff] text-[#5f7291] rounded-full px-3.5 py-1 text-[0.7rem] font-bold ${x.type === "education" ? "text-brandAccent" : ""}">${typeLabel}</span></div>
         <div class="font-bold text-base">${escapeHtml(x.role)}</div>
         ${x.organization ? `<div class="text-brandAccent font-semibold text-xs mt-0.5">${escapeHtml(x.organization)}</div>` : ""}
         ${period ? `<div class="text-[#93a5be] text-[0.7rem] mt-1">${escapeHtml(period)}</div>` : ""}
@@ -253,7 +251,7 @@
     if (p.location) items.push(["Location", p.location, "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.location)]);
     if (!items.length) { section.classList.add("hidden"); return; }
     items.forEach(([label, value, href]) => {
-      const card = el("div", "bg-[#e6e7ee] rounded-[24px] shadow-[6px_6px_14px_#b7b8c2,-6px_-6px_14px_#ffffff] p-6 text-center transition-all");
+      const card = el("div", "bg-[#e6e7ee] rounded-[26px] shadow-[8px_8px_18px_#b7b8c2,-8px_-8px_18px_#ffffff] p-6 text-center transition-all");
       const inner = `<div class="text-[#93a5be] text-[0.65rem] font-bold uppercase tracking-wider mb-1.5">${escapeHtml(label)}</div><div class="font-semibold text-xs break-words transition-colors hover:text-brandAccent">${escapeHtml(value)}</div>`;
       const a = el("a", "block", inner);
       a.href = href;
@@ -303,52 +301,188 @@
   }
 
   function initNav() {
-    const navLinks = document.getElementById("navLinks");
-    const indicator = document.getElementById("navIndicator");
-    const links = Array.from(document.querySelectorAll("#navLinks a"));
-
-    function positionIndicator(link) {
-      if (!link || !indicator) return;
-      const lRect = link.getBoundingClientRect();
-      const pRect = navLinks.getBoundingClientRect();
-      indicator.style.width = lRect.width + "px";
-      indicator.style.height = lRect.height + "px";
-      indicator.style.left = (lRect.left - pRect.left) + "px";
-      indicator.style.top = (lRect.top - pRect.top) + "px";
-    }
-
-    function setActive(link) {
-      links.forEach(l => l.classList.remove("text-brandAccent"));
-      link.classList.add("text-brandAccent");
-      positionIndicator(link);
-    }
-
-    links.forEach(link => {
-      link.addEventListener("click", () => setActive(link));
-    });
-
+    const links = Array.from(document.querySelectorAll(".nav-link"));
     const sections = links.map(l => {
       const id = l.getAttribute("href").substring(1);
       return document.getElementById(id);
     }).filter(Boolean);
 
+    links.forEach(link => {
+      link.addEventListener("click", (e) => {
+        const targetId = link.getAttribute("href").substring(1);
+        if (targetId === "contact") {
+          e.preventDefault();
+          window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+        }
+      });
+    });
+
     window.addEventListener("scroll", () => {
-      const scrollPos = window.scrollY + 140;
+      const scrollPos = window.scrollY + 180;
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+
+      if ((window.innerHeight + window.scrollY) >= docHeight - 30) {
+        links.forEach(l => l.classList.remove("active"));
+        const contactLink = links.find(l => l.getAttribute("href") === "#contact");
+        if (contactLink) contactLink.classList.add("active");
+        return;
+      }
+
       for (let i = sections.length - 1; i >= 0; i--) {
         const sec = sections[i];
         if (sec && !sec.classList.contains("hidden") && sec.offsetTop <= scrollPos) {
           const currentActive = links.find(l => l.getAttribute("href") === "#" + sec.id);
-          if (currentActive) setActive(currentActive);
+          if (currentActive) {
+            links.forEach(l => l.classList.remove("active"));
+            currentActive.classList.add("active");
+          }
           break;
         }
       }
     });
 
-    if (links[0]) setActive(links[0]);
-    window.addEventListener("resize", () => {
-      const active = links.find(l => l.classList.contains("text-brandAccent")) || links[0];
-      if (active) positionIndicator(active);
+    if (links[0]) links[0].classList.add("active");
+  }
+
+  let currentStoryIndex = 0;
+  let storyTimer = null;
+
+  function initStoryViewer() {
+    const wrap = document.getElementById("avatarFrameWrap");
+    const modal = document.getElementById("storyModal");
+    const closeBtn = document.getElementById("storyCloseBtn");
+    const prevBtn = document.getElementById("storyPrevBtn");
+    const nextBtn = document.getElementById("storyNextBtn");
+
+    if (wrap) {
+      wrap.addEventListener("click", () => {
+        const stories = globalPortfolioData.stories || [];
+        if (!stories.length) return;
+        currentStoryIndex = 0;
+        openStoryModal();
+      });
+    }
+
+    if (closeBtn) closeBtn.addEventListener("click", closeStoryModal);
+    if (modal) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeStoryModal();
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", () => {
+        if (currentStoryIndex > 0) {
+          currentStoryIndex--;
+          playStory(currentStoryIndex);
+        }
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        const stories = globalPortfolioData.stories || [];
+        if (currentStoryIndex < stories.length - 1) {
+          currentStoryIndex++;
+          playStory(currentStoryIndex);
+        } else {
+          closeStoryModal();
+        }
+      });
+    }
+  }
+
+  function openStoryModal() {
+    const modal = document.getElementById("storyModal");
+    if (modal) modal.classList.remove("hidden");
+    const profile = globalPortfolioData.profile || {};
+    document.getElementById("storyModalName").textContent = profile.full_name || "Portfolio";
+    if (profile.avatar_url) document.getElementById("storyModalAvatar").src = profile.avatar_url;
+    
+    buildStoryProgressBars();
+    playStory(0);
+  }
+
+  function closeStoryModal() {
+    const modal = document.getElementById("storyModal");
+    if (modal) modal.classList.add("hidden");
+    if (storyTimer) clearTimeout(storyTimer);
+    const stories = globalPortfolioData.stories || [];
+    if (stories.length) {
+      const seenKey = "portfolio_stories_seen_" + (stories.map(s => s.id).join("_"));
+      localStorage.setItem(seenKey, "true");
+      updateStoryRingState();
+    }
+  }
+
+  function buildStoryProgressBars() {
+    const container = document.getElementById("storyProgressBars");
+    if (!container) return;
+    container.innerHTML = "";
+    const stories = globalPortfolioData.stories || [];
+    stories.forEach(() => {
+      const seg = el("div", "flex-1 bg-white/35 rounded-full overflow-hidden h-full");
+      seg.appendChild(el("div", "h-full w-0 bg-white transition-all duration-linear"));
+      container.appendChild(seg);
     });
+  }
+
+  function playStory(index) {
+    if (storyTimer) clearTimeout(storyTimer);
+    const stories = globalPortfolioData.stories || [];
+    if (!stories[index]) { closeStoryModal(); return; }
+
+    currentStoryIndex = index;
+    const story = stories[index];
+
+    const segments = document.querySelectorAll("#storyProgressBars > div");
+    segments.forEach((seg, i) => {
+      const fill = seg.querySelector("div");
+      if (!fill) return;
+      fill.style.transition = "none";
+      fill.style.width = "0%";
+      if (i < index) {
+        fill.style.width = "100%";
+      } else if (i === index) {
+        setTimeout(() => {
+          fill.style.transition = "width 5s linear";
+          fill.style.width = "100%";
+        }, 50);
+      }
+    });
+
+    const stage = document.getElementById("storyMediaStage");
+    if (!stage) return;
+    stage.innerHTML = "";
+    const isVid = story.media_url && story.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
+    if (isVid) {
+      const vid = document.createElement("video");
+      vid.src = story.media_url;
+      vid.autoplay = true;
+      vid.playsInline = true;
+      vid.className = "w-full h-full object-contain";
+      vid.onended = () => {
+        if (currentStoryIndex < stories.length - 1) playStory(currentStoryIndex + 1);
+        else closeStoryModal();
+      };
+      stage.appendChild(vid);
+    } else {
+      const img = document.createElement("img");
+      img.src = story.media_url || "";
+      img.className = "w-full h-full object-contain";
+      stage.appendChild(img);
+      storyTimer = setTimeout(() => {
+        if (currentStoryIndex < stories.length - 1) playStory(currentStoryIndex + 1);
+        else closeStoryModal();
+      }, 5000);
+    }
+
+    const captionBox = document.getElementById("storyCaptionText");
+    if (captionBox) {
+      captionBox.textContent = story.caption || "";
+      captionBox.style.display = story.caption ? "block" : "none";
+    }
   }
 
   function runIntro(profile) {
@@ -366,14 +500,15 @@
       const ring = document.getElementById("introProgressRing");
       if (ring) ring.style.strokeDashoffset = "0";
       setTimeout(() => {
-        introScreen.classList.add("intro-zoom");
+        if (introScreen) introScreen.classList.add("intro-zoom");
         document.body.classList.remove("pre-reveal");
-        mainContent.classList.remove("opacity-0");
+        if (mainContent) mainContent.classList.remove("opacity-0");
         initScrollReveal();
         initSkillsReveal();
         initNav();
         setupProjectControls();
-        setTimeout(() => { introScreen.style.display = "none"; }, 850);
+        initStoryViewer();
+        setTimeout(() => { if (introScreen) introScreen.style.display = "none"; }, 850);
       }, 350);
     }, 400);
   }

@@ -20,7 +20,7 @@
     setTimeout(() => {
       toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
-    }, 2600);
+    }, 2800);
   }
 
   async function checkSession() {
@@ -78,7 +78,35 @@
     });
   });
 
+  // --- Dual Preview Helper (Current Selected + Last Saved) ---
+  function renderDualPreviews(containerId, currentUrl, savedUrl) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (savedUrl) {
+      const box = el("div", "preview-box");
+      const isVid = savedUrl.match(/\.(mp4|webm|ogg|mov)$/i);
+      box.innerHTML = isVid ? `<video src="${escapeHtml(savedUrl)}" muted></video><span class="preview-label">Saved</span>` : `<img src="${escapeHtml(savedUrl)}" alt="Saved" /><span class="preview-label">Saved</span>`;
+      container.appendChild(box);
+    }
+    if (currentUrl && currentUrl !== savedUrl) {
+      const box = el("div", "preview-box");
+      const isVid = currentUrl.match(/\.(mp4|webm|ogg|mov)$/i);
+      box.innerHTML = isVid ? `<video src="${escapeHtml(currentUrl)}" muted autoplay></video><span class="preview-label">Current</span>` : `<img src="${escapeHtml(currentUrl)}" alt="Current" /><span class="preview-label">Current</span>`;
+      container.appendChild(box);
+    }
+  }
+
+  function el(tag, cls, html) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (html !== undefined) node.innerHTML = html;
+    return node;
+  }
+
   // --- Profile Loader ---
+  let savedAvatarUrl = "";
   async function loadProfile() {
     const res = await fetch("/api/portfolio");
     const data = await res.json();
@@ -89,7 +117,9 @@
       if (input) input.value = profile[key] || "";
     });
     if (profile.avatar_url) {
-      setPreview("avatarPreview", profile.avatar_url);
+      savedAvatarUrl = profile.avatar_url;
+      document.getElementById("avatarUrlInput").value = profile.avatar_url;
+      renderDualPreviews("avatarPreviewContainer", profile.avatar_url, savedAvatarUrl);
     }
   }
 
@@ -98,17 +128,22 @@
     const body = {};
     new FormData(e.target).forEach((v, k) => { body[k] = v; });
     const res = await api("/profile", { method: "PUT", body: JSON.stringify(body) });
-    if (res.ok) showToast("Profile saved successfully!", "success");
-    else showToast("Failed to save profile", "error");
+    if (res.ok) {
+      savedAvatarUrl = body.avatar_url;
+      showToast("Profile saved successfully!", "success");
+    } else {
+      showToast("Failed to save profile", "error");
+    }
   });
 
-  // --- Generic CRUD Lists ---
+  // --- CRUD Lists ---
   const CONFIG = {
     skills: { listEl: "skillsList", formEl: "skillForm", titleField: "name", subFn: i => `${i.category || ""} · ${i.level}%` },
     projects: { listEl: "projectsList", formEl: "projectForm", titleField: "title", subFn: i => Number(i.starred) === 1 ? "★ Starred" : i.tech_stack || "" },
     experience: { listEl: "experienceList", formEl: "experienceForm", titleField: "role", subFn: i => `${i.organization} (${i.start_date} - ${i.end_date})` }
   };
 
+  let savedProjectImgUrl = "";
   async function loadList(type) {
     const cfg = CONFIG[type];
     const res = await api("/" + type);
@@ -149,7 +184,10 @@
         else input.value = item[key] ?? "";
       }
     });
-    if (type === "projects" && item.image_url) setPreview("projectPreview", item.image_url);
+    if (type === "projects" && item.image_url) {
+      savedProjectImgUrl = item.image_url;
+      renderDualPreviews("projectPreviewContainer", item.image_url, savedProjectImgUrl);
+    }
     form.scrollIntoView({ behavior: "smooth" });
   }
 
@@ -158,8 +196,8 @@
     form.reset();
     form.elements.namedItem("id").value = "";
     if (type === "projects") {
-      const img = document.getElementById("projectPreview");
-      if (img) img.style.display = "none";
+      document.getElementById("projectPreviewContainer").innerHTML = "";
+      savedProjectImgUrl = "";
     }
   }
 
@@ -168,10 +206,7 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const body = {};
-      new FormData(form).forEach((v, k) => {
-        if (k !== "id") body[k] = v;
-      });
-      // Handle checkboxes explicitly
+      new FormData(form).forEach((v, k) => { if (k !== "id") body[k] = v; });
       const starredBox = form.elements.namedItem("starred");
       if (starredBox) body.starred = starredBox.checked ? 1 : 0;
 
@@ -180,6 +215,7 @@
                      : await api(`/${type}`, { method: "POST", body: JSON.stringify(body) });
       if (res.ok) {
         showToast(id ? "Updated successfully!" : "Added successfully!", "success");
+        if (type === "projects") savedProjectImgUrl = body.image_url || "";
         clearForm(type);
         loadList(type);
       } else {
@@ -206,7 +242,7 @@
       row.innerHTML = `
         <div style="display:flex; align-items:center; gap:12px;">
           <img src="${escapeHtml(s.media_url)}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;" />
-          <div><strong>Story #${s.id}</strong><div style="font-size:0.8rem; color:var(--text-faint);">${new Date(s.created_at).toLocaleString()}</div></div>
+          <div><strong>Story #${s.id}</strong><div style="font-size:0.8rem; color:var(--text-faint);">${escapeHtml(s.caption || "No caption")}</div></div>
         </div>
         <button type="button" class="icon-btn btn-danger">&#10005;</button>
       `;
@@ -222,62 +258,60 @@
   document.getElementById("storyForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const media_url = document.getElementById("storyMediaUrlInput").value;
-    if (!media_url) { showToast("Please upload an image first", "error"); return; }
-    const res = await api("/stories", { method: "POST", body: JSON.stringify({ media_url }) });
+    const caption = e.target.elements.namedItem("caption").value;
+    if (!media_url) { showToast("Please upload media first", "error"); return; }
+    const res = await api("/stories", { method: "POST", body: JSON.stringify({ media_url, caption }) });
     if (res.ok) {
-      showToast("Story published!", "success");
+      showToast("Story published successfully!", "success");
       document.getElementById("storyForm").reset();
-      document.getElementById("storyPreview").style.display = "none";
+      document.getElementById("storyPreviewContainer").innerHTML = "";
       loadStories();
     } else {
       showToast("Failed to publish story", "error");
     }
   });
 
-  // --- File Upload with XHR Progress & Live Preview ---
-  function setPreview(id, url) {
-    let img = document.getElementById(id);
-    if (!img) {
-      img = document.createElement("img");
-      img.id = id;
-      img.style.cssText = "width:80px; height:80px; border-radius:12px; object-fit:cover; margin-top:10px;";
-      document.currentFileInputParent.appendChild(img);
-    }
-    img.src = url;
-    img.style.display = "block";
-  }
-
+  // --- XHR File Upload with Progress Bar & Previews ---
   document.querySelectorAll('input[type="file"][data-upload-target]').forEach(fileInput => {
     fileInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      const targetId = fileInput.dataset.uploadTarget;
-      const targetInput = document.getElementById(targetId);
 
-      fileInput.dataset.uploadTargetParent = true;
-      document.currentFileInputParent = fileInput.parentElement;
+      const targetId = fileInput.dataset.uploadTarget;
+      const progressId = fileInput.dataset.progressId;
+      const previewId = fileInput.dataset.previewId;
+      const targetInput = document.getElementById(targetId);
+      const track = document.getElementById(progressId);
+      const fill = track ? track.querySelector(".upload-progress-fill") : null;
+
+      if (track) track.style.display = "block";
+      if (fill) fill.style.width = "0%";
 
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "/api/admin/upload");
       xhr.withCredentials = true;
+
       xhr.upload.onprogress = (ev) => {
-        if (ev.lengthComputable) {
+        if (ev.lengthComputable && fill) {
           const pct = Math.round((ev.loaded / ev.total) * 100);
-          showToast(`Uploading... ${pct}%`, "success");
+          fill.style.width = pct + "%";
         }
       };
+
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           const data = JSON.parse(xhr.responseText);
           targetInput.value = data.url;
-          if (targetId === "avatarUrlInput") setPreview("avatarPreview", data.url);
-          if (targetId === "projectImageUrlInput") setPreview("projectPreview", data.url);
-          if (targetId === "storyMediaUrlInput") setPreview("storyPreview", data.url);
-          showToast("Image uploaded successfully!", "success");
+          if (targetId === "avatarUrlInput") renderDualPreviews(previewId, data.url, savedAvatarUrl);
+          else if (targetId === "projectImageUrlInput") renderDualPreviews(previewId, data.url, savedProjectImgUrl);
+          else renderDualPreviews(previewId, data.url, "");
+          showToast("Upload completed successfully!", "success");
         } else {
           showToast("Upload failed", "error");
         }
+        if (track) setTimeout(() => { track.style.display = "none"; }, 800);
       };
+
       const fd = new FormData();
       fd.append("file", file);
       xhr.send(fd);

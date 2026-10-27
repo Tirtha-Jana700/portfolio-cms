@@ -17,14 +17,8 @@ app = Flask(__name__)
 SESSION_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
 ADMIN_COOKIE = "session_token"
 
-
-# ---------------------------------------------------------------------------
-# env / D1 / R2 helpers
-# ---------------------------------------------------------------------------
-
 def env():
     return request.environ["workers.env"]
-
 
 def to_py(obj):
     if obj is None:
@@ -36,7 +30,6 @@ def to_py(obj):
             pass
     return obj
 
-
 def d1_all(sql, params=None):
     stmt = env().DB.prepare(sql)
     if params:
@@ -45,7 +38,6 @@ def d1_all(sql, params=None):
     rows = result.get("results", result) if isinstance(result, dict) else result
     return rows or []
 
-
 def d1_first(sql, params=None):
     stmt = env().DB.prepare(sql)
     if params:
@@ -53,24 +45,16 @@ def d1_first(sql, params=None):
     result = run_sync(stmt.first())
     return to_py(result)
 
-
 def d1_run(sql, params=None):
     stmt = env().DB.prepare(sql)
     if params:
         stmt = stmt.bind(*params)
     return to_py(run_sync(stmt.run()))
 
-
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
-
-# ---------------------------------------------------------------------------
-# Admin auth & Pure-Python Hashing
-# ---------------------------------------------------------------------------
-
 def custom_check_password(stored_hash, password):
-    """Pure Python SHA-256 verification compatible with Pyodide runtime."""
     try:
         salt, pwd_hash = stored_hash.split("$")
         computed = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
@@ -78,11 +62,9 @@ def custom_check_password(stored_hash, password):
     except Exception:
         return False
 
-
 def serializer():
     secret = getattr(env(), "SESSION_SECRET", None) or "dev-insecure-secret-change-me"
     return URLSafeTimedSerializer(secret)
-
 
 def is_authenticated():
     token = request.cookies.get(ADMIN_COOKIE)
@@ -94,7 +76,6 @@ def is_authenticated():
     except (BadSignature, SignatureExpired):
         return False
 
-
 def admin_required(fn):
     def wrapper(*args, **kwargs):
         if not is_authenticated():
@@ -103,37 +84,23 @@ def admin_required(fn):
     wrapper.__name__ = fn.__name__
     return wrapper
 
-
 def cookie_is_secure():
     host = request.host.split(":")[0]
     return host not in ("localhost", "127.0.0.1")
-
 
 @app.post("/api/admin/login")
 def admin_login():
     body = request.get_json(silent=True) or {}
     password = body.get("password", "")
-
     stored_hash = getattr(env(), "ADMIN_PASSWORD_HASH", None)
     if not stored_hash:
-        return jsonify({"error": "Admin password is not configured on the server yet."}), 500
-
+        return jsonify({"error": "Admin password not configured."}), 500
     if not password or not custom_check_password(stored_hash, password):
         return jsonify({"error": "Incorrect password"}), 401
-
     token = serializer().dumps({"adm": True})
     resp = jsonify({"ok": True})
-    resp.set_cookie(
-        ADMIN_COOKIE,
-        token,
-        max_age=SESSION_MAX_AGE,
-        httponly=True,
-        secure=cookie_is_secure(),
-        samesite="Strict",
-        path="/api/admin",
-    )
+    resp.set_cookie(ADMIN_COOKIE, token, max_age=SESSION_MAX_AGE, httponly=True, secure=cookie_is_secure(), samesite="Strict", path="/api/admin")
     return resp
-
 
 @app.post("/api/admin/logout")
 def admin_logout():
@@ -141,15 +108,9 @@ def admin_logout():
     resp.delete_cookie(ADMIN_COOKIE, path="/api/admin")
     return resp
 
-
 @app.get("/api/admin/session")
 def admin_session():
     return jsonify({"authenticated": is_authenticated()})
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 
 @app.get("/api/portfolio")
 def get_portfolio():
@@ -158,7 +119,6 @@ def get_portfolio():
     projects = d1_all("SELECT * FROM projects ORDER BY sort_order ASC, id DESC")
     experience = d1_all("SELECT * FROM experience ORDER BY sort_order ASC, id ASC")
     
-    # Fetch active stories from the last 24 hours
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
     stories = d1_all("SELECT * FROM stories WHERE created_at >= ? ORDER BY id ASC", [cutoff])
 
@@ -170,17 +130,11 @@ def get_portfolio():
         "stories": stories,
     })
 
-
-# ---------------------------------------------------------------------------
-# Admin: profile & CRUD
-# ---------------------------------------------------------------------------
-
 PROFILE_FIELDS = [
     "full_name", "title", "tagline", "bio", "avatar_url", "resume_url",
     "email", "location", "github_url", "linkedin_url",
     "twitter_url", "instagram_url", "youtube_url",
 ]
-
 
 @app.put("/api/admin/profile")
 @admin_required
@@ -197,7 +151,6 @@ def update_profile():
     params.append(now_iso())
     d1_run(f"UPDATE profile SET {', '.join(sets)} WHERE id = 1", params)
     return jsonify(d1_first("SELECT * FROM profile WHERE id = 1"))
-
 
 def make_crud(table, allowed_fields, required_field, order_sql):
     def list_items():
@@ -247,7 +200,6 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         admin_required(delete_item),
     )
 
-
 skills_list, skills_create, skills_update, skills_delete = make_crud(
     "skills", ["name", "category", "level", "sort_order"], "name", "sort_order ASC, id ASC"
 )
@@ -276,28 +228,22 @@ app.post("/api/admin/experience")(experience_create)
 app.put("/api/admin/experience/<int:item_id>")(experience_update)
 app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
-
-# ---------------------------------------------------------------------------
-# Stories Management API
-# ---------------------------------------------------------------------------
-
 @app.get("/api/admin/stories")
 @admin_required
 def admin_get_stories():
     return jsonify(d1_all("SELECT * FROM stories ORDER BY id DESC"))
-
 
 @app.post("/api/admin/stories")
 @admin_required
 def admin_create_story():
     body = request.get_json(silent=True) or {}
     media_url = body.get("media_url")
+    caption = body.get("caption", "")
     if not media_url:
         return jsonify({"error": "media_url is required"}), 400
-    d1_run("INSERT INTO stories (media_url, created_at) VALUES (?, ?)", [media_url, now_iso()])
+    d1_run("INSERT INTO stories (media_url, caption, created_at) VALUES (?, ?, ?)", [media_url, caption, now_iso()])
     row = d1_first("SELECT * FROM stories ORDER BY id DESC LIMIT 1")
     return jsonify(row), 201
-
 
 @app.delete("/api/admin/stories/<int:story_id>")
 @admin_required
@@ -305,40 +251,30 @@ def admin_delete_story(story_id):
     d1_run("DELETE FROM stories WHERE id = ?", [story_id])
     return jsonify({"ok": True})
 
-
-# ---------------------------------------------------------------------------
-# Media & R2 Storage
-# ---------------------------------------------------------------------------
-
 def get_bucket():
     e = env()
     return getattr(e, "BUCKET", None) or getattr(e, "MEDIA", None)
-
 
 @app.post("/api/admin/upload")
 @admin_required
 def upload_image():
     bucket = get_bucket()
     if bucket is None:
-        return jsonify({"error": "R2 bucket binding 'MEDIA' not found."}), 501
-
+        return jsonify({"error": "R2 bucket binding not found."}), 501
     file = request.files.get("file")
     if not file:
         return jsonify({"error": "No file provided"}), 400
-
     try:
         import uuid
         ext = ""
         if "." in file.filename:
             ext = "." + file.filename.rsplit(".", 1)[1].lower()
         key = f"{uuid.uuid4().hex}{ext}"
-
         data = file.read()
         run_sync(bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype or "application/octet-stream"}}))
         return jsonify({"url": f"/media/{key}"}), 201
     except Exception as e:
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500
-
 
 @app.get("/media/<path:key>")
 def serve_media(key):
@@ -349,12 +285,10 @@ def serve_media(key):
         obj = run_sync(bucket.get(key))
         if obj is None:
             return Response("Not found", status=404)
-        
         try:
             body = bytes(run_sync(obj.arrayBuffer()))
         except Exception:
             body = run_sync(obj.bytes())
-
         content_type = "application/octet-stream"
         try:
             http_meta = to_py(obj.httpMetadata)
@@ -362,15 +296,9 @@ def serve_media(key):
                 content_type = http_meta["contentType"]
         except Exception:
             pass
-
         return Response(body, content_type=content_type, headers={"Cache-Control": "public, max-age=31536000, immutable"})
     except Exception as e:
         return Response(f"Error serving media: {str(e)}", status=500)
-
-
-# ---------------------------------------------------------------------------
-# Frontend Fallthrough
-# ---------------------------------------------------------------------------
 
 @app.get("/")
 @app.get("/<path:path>")
@@ -379,7 +307,6 @@ def frontend(path=""):
     asset_response = run_sync(assets.fetch(f"https://assets.local/{path}"))
     body = run_sync(asset_response.bytes())
     return Response(body, status=asset_response.status, headers=asset_response.headers)
-
 
 Default = wsgi.entrypoint(app)
 

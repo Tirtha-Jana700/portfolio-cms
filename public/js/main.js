@@ -30,7 +30,7 @@
     } catch (e) { return null; }
   }
 
-  // --- Stories Setup ---
+  // --- Story System with Video & Caption Support ---
   let currentStories = [];
   let storyIndex = 0;
   let storyTimer = null;
@@ -63,7 +63,23 @@
       return;
     }
     const story = currentStories[storyIndex];
-    document.getElementById("storyImageWrap").innerHTML = `<img src="${escapeHtml(story.media_url)}" alt="Story" />`;
+    const mediaWrap = document.getElementById("storyMediaWrap");
+    const isVideo = story.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
+
+    if (isVideo) {
+      mediaWrap.innerHTML = `<video src="${escapeHtml(story.media_url)}" autoplay playsinline controls></video>`;
+    } else {
+      mediaWrap.innerHTML = `<img src="${escapeHtml(story.media_url)}" alt="Story" />`;
+    }
+
+    const captionEl = document.getElementById("storyCaption");
+    if (story.caption) {
+      captionEl.textContent = story.caption;
+      captionEl.style.display = "block";
+    } else {
+      captionEl.style.display = "none";
+    }
+
     document.getElementById("storyTimestamp").textContent = new Date(story.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
     const progressSegments = document.getElementById("storyProgressSegments");
@@ -77,10 +93,12 @@
     });
 
     clearTimeout(storyTimer);
-    storyTimer = setTimeout(() => {
-      storyIndex++;
-      renderStorySlide();
-    }, 5000);
+    if (!isVideo) {
+      storyTimer = setTimeout(() => {
+        storyIndex++;
+        renderStorySlide();
+      }, 5000);
+    }
   }
 
   function closeStoryModal() {
@@ -163,7 +181,7 @@
     observer.observe(section);
   }
 
-  // --- Projects: Carousel / Grid toggle & Star Filter ---
+  // --- Projects with Star Filter & Icon View Toggle ---
   let allProjects = [];
   let currentFilter = "all";
   let currentView = "carousel";
@@ -226,7 +244,14 @@
 
   document.getElementById("viewToggleBtn").addEventListener("click", () => {
     currentView = currentView === "carousel" ? "grid" : "carousel";
-    document.getElementById("viewToggleBtn").textContent = currentView === "carousel" ? "Switch to Grid View" : "Switch to Carousel View";
+    const btn = document.getElementById("viewToggleBtn");
+    if (currentView === "grid") {
+      btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>';
+      btn.title = "Switch to Carousel View";
+    } else {
+      btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+      btn.title = "Switch to Grid View";
+    }
     buildProjectsUI();
   });
 
@@ -272,11 +297,12 @@
     document.getElementById("footerText").textContent = p.full_name ? `© ${new Date().getFullYear()} ${p.full_name}` : `© ${new Date().getFullYear()}`;
   }
 
-  // --- Bouncy Sliding Nav Indicator Physics ---
+  // --- 2. Accurate Scroll Spy Physics ---
   function initNavIndicator() {
     const navLinks = document.getElementById("navLinks");
     const indicator = document.getElementById("navIndicator");
     const links = Array.from(document.querySelectorAll(".nav-link"));
+    const sections = links.map(l => document.querySelector(l.getAttribute("href"))).filter(Boolean);
 
     function moveIndicator(link, animate) {
       if (!link) return;
@@ -298,17 +324,20 @@
     }
 
     links.forEach(link => {
-      link.addEventListener("click", () => moveIndicator(link, true));
+      link.addEventListener("click", (e) => {
+        moveIndicator(link, true);
+      });
     });
 
-    const sections = links.map(l => document.querySelector(l.getAttribute("href"))).filter(Boolean);
     window.addEventListener("scroll", () => {
-      let fromTop = window.scrollY + 140;
+      let scrollPos = window.scrollY + 200;
+      let activeIndex = 0;
       sections.forEach((sec, idx) => {
-        if (sec.offsetTop <= fromTop && sec.offsetTop + sec.offsetHeight > fromTop) {
-          moveIndicator(links[idx], false);
+        if (sec.offsetTop <= scrollPos) {
+          activeIndex = idx;
         }
       });
+      moveIndicator(links[activeIndex], false);
     });
 
     if (links.length) moveIndicator(links[0], false);

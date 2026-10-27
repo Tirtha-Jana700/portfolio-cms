@@ -22,17 +22,17 @@
 <div id="storyModal">
   <div class="story-content-box">
     <div class="story-header-bar" id="storyProgressSegments"></div>
-    <div class="story-image-wrap" id="storyImageWrap"></div>
+    <div class="story-media-wrap" id="storyMediaWrap"></div>
+    <div class="story-caption-box" id="storyCaption" style="display:none;"></div>
     <div class="story-footer-bar">
       <span id="storyTimestamp"></span>
-      <button class="btn" id="closeStoryBtn" style="padding:6px 14px; font-size:0.8rem;">Close</button>
+      <button class="btn" id="closeStoryBtn" style="padding:4px 12px; font-size:0.75rem;">Close</button>
     </div>
   </div>
 </div>
 
 <div id="mainContent">
 
-  <!-- Sticky Solid Nav with Bouncy Sliding Pill Indicator -->
   <nav class="nav">
     <div class="container nav-inner">
       <div class="nav-brand">Portfolio</div>
@@ -88,7 +88,9 @@
           <button class="btn active" data-filter="all">All</button>
           <button class="btn" data-filter="starred">★ Starred</button>
           <button class="btn" data-filter="unstarred">Other</button>
-          <button class="btn btn-accent" id="viewToggleBtn">Switch to Grid View</button>
+          <button class="icon-btn" id="viewToggleBtn" title="Switch to Grid View" style="margin: 0 auto; width: 50px; height: 50px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
         </div>
       </div>
       <div class="projects-container" id="projectsContainer"></div>

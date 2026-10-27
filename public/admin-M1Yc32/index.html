@@ -51,17 +51,19 @@
           <div class="field span-2"><label>Bio</label><textarea name="bio" rows="5"></textarea></div>
 
           <div class="field span-2">
-            <label>Avatar Image (Upload from Device)</label>
+            <label>Avatar Image</label>
             <input type="hidden" name="avatar_url" id="avatarUrlInput" />
-            <div class="file-row">
-              <input type="file" accept="image/*" data-upload-target="avatarUrlInput" />
+            <div class="file-dropzone">
+              <span class="file-dropzone-text">Tap to choose photo or video</span>
+              <input type="file" accept="image/*,video/*" data-upload-target="avatarUrlInput" data-progress-id="avatarProgress" data-preview-id="avatarPreviewContainer" />
             </div>
-            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="avatarProgress"></div></div>
+            <div class="upload-progress-track" id="avatarProgress"><div class="upload-progress-fill"></div></div>
+            <div class="preview-container" id="avatarPreviewContainer"></div>
           </div>
 
           <div class="field"><label>Resume URL</label><input name="resume_url" /></div>
           <div class="field"><label>Email</label><input name="email" type="email" /></div>
-          <div class="field span-2"><label>Location (for Google Maps link)</label><input name="location" placeholder="e.g. Kolkata, West Bengal" /></div>
+          <div class="field span-2"><label>Location</label><input name="location" /></div>
 
           <div class="field"><label>GitHub URL</label><input name="github_url" /></div>
           <div class="field"><label>LinkedIn URL</label><input name="linkedin_url" /></div>
@@ -93,7 +95,7 @@
       </form>
     </div>
 
-    <!-- Projects Tab (with Starred Checkbox) -->
+    <!-- Projects Tab -->
     <div class="admin-panel" id="panel-projects">
       <div class="item-list" id="projectsList"></div>
       <form id="projectForm" class="card">
@@ -102,18 +104,20 @@
           <div class="field span-2"><label>Title</label><input name="title" required /></div>
           <div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
           <div class="field span-2">
-            <label>Project Image (Upload from Device)</label>
+            <label>Project Image</label>
             <input type="hidden" name="image_url" id="projectImageUrlInput" />
-            <div class="file-row">
-              <input type="file" accept="image/*" data-upload-target="projectImageUrlInput" />
+            <div class="file-dropzone">
+              <span class="file-dropzone-text">Tap to choose project image</span>
+              <input type="file" accept="image/*" data-upload-target="projectImageUrlInput" data-progress-id="projectProgress" data-preview-id="projectPreviewContainer" />
             </div>
-            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="projectProgress"></div></div>
+            <div class="upload-progress-track" id="projectProgress"><div class="upload-progress-fill"></div></div>
+            <div class="preview-container" id="projectPreviewContainer"></div>
           </div>
           <div class="field span-2"><label>Tech stack (comma separated)</label><input name="tech_stack" /></div>
           <div class="field"><label>Live URL</label><input name="live_url" /></div>
           <div class="field"><label>Repo URL</label><input name="repo_url" /></div>
           <div class="field" style="display:flex; align-items:center; gap:10px; padding-top:24px;">
-            <input type="checkbox" name="starred" value="1" id="starredCheck" style="width:20px; height:20px;" />
+            <input type="checkbox" name="starred" value="1" id="starredCheck" style="width:22px; height:22px;" />
             <label for="starredCheck" style="margin:0; cursor:pointer;">Mark as Popular (Star)</label>
           </div>
           <div class="field"><label>Order</label><input name="sort_order" type="number" value="0" /></div>
@@ -152,18 +156,24 @@
       </form>
     </div>
 
-    <!-- Stories Tab (Instagram 24-hour stories manager) -->
+    <!-- Stories Tab with Video & Caption -->
     <div class="admin-panel" id="panel-stories">
       <div class="item-list" id="storiesList"></div>
       <form id="storyForm" class="card">
         <div class="form-grid">
           <div class="field span-2">
-            <label>Upload New 24-Hour Story</label>
+            <label>Upload New Story (Photo or Video)</label>
             <input type="hidden" name="media_url" id="storyMediaUrlInput" />
-            <div class="file-row">
-              <input type="file" accept="image/*" data-upload-target="storyMediaUrlInput" />
+            <div class="file-dropzone">
+              <span class="file-dropzone-text">Tap to upload story media</span>
+              <input type="file" accept="image/*,video/*" data-upload-target="storyMediaUrlInput" data-progress-id="storyProgress" data-preview-id="storyPreviewContainer" />
             </div>
-            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="storyProgress"></div></div>
+            <div class="upload-progress-track" id="storyProgress"><div class="upload-progress-fill"></div></div>
+            <div class="preview-container" id="storyPreviewContainer"></div>
+          </div>
+          <div class="field span-2">
+            <label>Story Caption (Optional)</label>
+            <input name="caption" placeholder="Add a caption for your story..." />
           </div>
         </div>
         <div class="form-actions">
@@ -179,5 +189,4 @@
 <script src="admin.js"></script>
 </body>
 </html>
-
 

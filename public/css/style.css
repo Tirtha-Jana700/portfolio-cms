@@ -1,73 +1,60 @@
-/* ===========================================================
-   Neumorphic design system with Apple Spring Animations & Tailwind Integration
-   =========================================================== */
+html { scroll-behavior: smooth; scroll-padding-top: 110px; }
 
-html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+body { margin: 0; -webkit-font-smoothing: antialiased; }
 
-body {
-  margin: 0;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ---------- Scroll Reveal (Apple Notification Stagger Style) ---------- */
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 .reveal {
   opacity: 0;
-  transform: translateX(-35px) scale(0.97);
-  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-  will-change: opacity, transform;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .reveal.in-view {
   opacity: 1;
-  transform: translateX(0) scale(1);
+  transform: translateY(0);
 }
-
-/* ---------- Intro splash animations ---------- */
 
 body.pre-reveal #mainContent { opacity: 0; }
 
 #introScreen.intro-zoom { 
-  transform: scale(25); 
+  transform: scale(20); 
   opacity: 0; 
   pointer-events: none; 
-  transition: transform 0.9s cubic-bezier(0.6, 0, 1, 0.4), opacity 0.9s ease;
+  transition: transform 0.8s cubic-bezier(0.6, 0, 1, 0.4), opacity 0.8s ease;
 }
 
-/* ---------- Carousel Mode View Styles ---------- */
-
+/* Horizontal Carousel Mode View */
 .projects-grid.carousel-view {
   display: flex !important;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   gap: 20px;
   padding: 10px 4px 20px 4px;
+  -ms-overflow-style: none;
   scrollbar-width: none;
 }
 .projects-grid.carousel-view::-webkit-scrollbar { display: none; }
 .projects-grid.carousel-view .project-card {
-  min-width: 300px;
-  max-width: 340px;
+  min-width: 290px;
+  max-width: 330px;
   flex: 0 0 auto;
   scroll-snap-align: center;
 }
 
-/* Starred Ribbon Badge */
-.project-card.starred-card::after {
-  content: "★ Popular";
+.starred-card::after {
+  content: "★ Starred";
   position: absolute;
   top: 14px; right: 14px;
   background: #e6e7ee;
   box-shadow: 4px 4px 9px #b7b8c2, -4px -4px 9px #ffffff;
   color: #3a56d4;
-  padding: 4px 10px;
-  font-size: 0.72rem;
+  padding: 3px 9px;
+  font-size: 0.7rem;
   font-weight: 700;
   border-radius: 999px;
   z-index: 2;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
 }
 

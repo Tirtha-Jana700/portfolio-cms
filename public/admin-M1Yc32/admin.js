@@ -10,23 +10,18 @@
   const loginWrap = document.getElementById("loginWrap");
   const adminShell = document.getElementById("adminShell");
 
-  // ---------- toast notifications ----------
-
   function showToast(message, type) {
     const container = document.getElementById("toastContainer");
+    if (!container) return;
     const toast = document.createElement("div");
-    toast.className = "toast toast-" + (type || "info");
+    toast.className = "toast " + (type || "success");
     toast.textContent = message;
     container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add("toast-in"));
     setTimeout(() => {
-      toast.classList.remove("toast-in");
-      toast.classList.add("toast-out");
+      toast.style.opacity = "0";
       setTimeout(() => toast.remove(), 300);
     }, 2600);
   }
-
-  // ---------- auth ----------
 
   async function checkSession() {
     try {
@@ -48,13 +43,13 @@
     loadList("skills");
     loadList("projects");
     loadList("experience");
+    loadStories();
   }
 
   document.getElementById("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const password = document.getElementById("loginPassword").value;
     const errorBox = document.getElementById("loginError");
-    errorBox.textContent = "";
     try {
       const res = await api("/login", { method: "POST", body: JSON.stringify({ password }) });
       const data = await res.json();
@@ -65,7 +60,7 @@
         errorBox.textContent = data.error || "Login failed";
       }
     } catch (e) {
-      errorBox.textContent = "Network error — try again.";
+      errorBox.textContent = "Network error";
     }
   });
 
@@ -73,8 +68,6 @@
     await api("/logout", { method: "POST" });
     showLogin();
   });
-
-  // ---------- tabs ----------
 
   document.querySelectorAll(".admin-tab").forEach(tab => {
     tab.addEventListener("click", () => {
@@ -85,23 +78,7 @@
     });
   });
 
-  // ---------- image preview helper ----------
-
-  function setPreview(previewId, emptyId, url) {
-    const img = document.getElementById(previewId);
-    const empty = document.getElementById(emptyId);
-    if (!img) return;
-    if (url) {
-      img.src = url; img.style.display = "block";
-      if (empty) empty.style.display = "none";
-    } else {
-      img.style.display = "none";
-      if (empty) empty.style.display = "block";
-    }
-  }
-
-  // ---------- profile ----------
-
+  // --- Profile Loader ---
   async function loadProfile() {
     const res = await fetch("/api/portfolio");
     const data = await res.json();
@@ -111,42 +88,25 @@
       const input = form.elements.namedItem(key);
       if (input) input.value = profile[key] || "";
     });
-    setPreview("avatarPreview", "avatarPreviewEmpty", profile.avatar_url);
+    if (profile.avatar_url) {
+      setPreview("avatarPreview", profile.avatar_url);
+    }
   }
 
   document.getElementById("profileForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const form = e.target;
     const body = {};
-    new FormData(form).forEach((v, k) => { body[k] = v; });
-    try {
-      const res = await api("/profile", { method: "PUT", body: JSON.stringify(body) });
-      if (res.ok) {
-        showToast("Profile saved", "success");
-      } else {
-        const data = await res.json().catch(() => ({}));
-        showToast(data.error || "Couldn't save profile", "error");
-      }
-    } catch (e) {
-      showToast("Network error — couldn't save profile", "error");
-    }
+    new FormData(e.target).forEach((v, k) => { body[k] = v; });
+    const res = await api("/profile", { method: "PUT", body: JSON.stringify(body) });
+    if (res.ok) showToast("Profile saved successfully!", "success");
+    else showToast("Failed to save profile", "error");
   });
 
-  // ---------- generic list CRUD (skills / projects / experience) ----------
-
+  // --- Generic CRUD Lists ---
   const CONFIG = {
-    skills: {
-      listEl: "skillsList", formEl: "skillForm", titleField: "name",
-      subFn: (i) => (i.category ? i.category + " · " : "") + (i.level ?? 0) + "%",
-    },
-    projects: {
-      listEl: "projectsList", formEl: "projectForm", titleField: "title",
-      subFn: (i) => i.tech_stack || "",
-    },
-    experience: {
-      listEl: "experienceList", formEl: "experienceForm", titleField: "role",
-      subFn: (i) => [i.organization, [i.start_date, i.end_date].filter(Boolean).join(" – ")].filter(Boolean).join(" · "),
-    },
+    skills: { listEl: "skillsList", formEl: "skillForm", titleField: "name", subFn: i => `${i.category || ""} · ${i.level}%` },
+    projects: { listEl: "projectsList", formEl: "projectForm", titleField: "title", subFn: i => Number(i.starred) === 1 ? "★ Starred" : i.tech_stack || "" },
+    experience: { listEl: "experienceList", formEl: "experienceForm", titleField: "role", subFn: i => `${i.organization} (${i.start_date} - ${i.end_date})` }
   };
 
   async function loadList(type) {
@@ -156,26 +116,26 @@
     const listEl = document.getElementById(cfg.listEl);
     listEl.innerHTML = "";
     if (!Array.isArray(items) || !items.length) {
-      listEl.innerHTML = '<p class="empty-note">Nothing added yet.</p>';
+      listEl.innerHTML = '<p class="empty-note">No entries yet.</p>';
       return;
     }
     items.forEach(item => {
       const row = document.createElement("div");
       row.className = "card item-row";
       row.innerHTML = `
-        <div class="item-main">
-          <div class="item-title"></div>
-          <div class="item-sub"></div>
-        </div>
-        <div class="item-actions">
-          <button type="button" class="icon-btn" data-action="edit">&#9998;</button>
-          <button type="button" class="icon-btn btn-danger" data-action="delete">&#10005;</button>
+        <div><strong>${escapeHtml(item[cfg.titleField])}</strong><div style="font-size:0.8rem; color:var(--text-faint);">${escapeHtml(cfg.subFn(item))}</div></div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="icon-btn edit-btn">&#9998;</button>
+          <button type="button" class="icon-btn btn-danger del-btn">&#10005;</button>
         </div>
       `;
-      row.querySelector(".item-title").textContent = item[cfg.titleField] || "(untitled)";
-      row.querySelector(".item-sub").textContent = cfg.subFn(item);
-      row.querySelector('[data-action="edit"]').addEventListener("click", () => fillForm(type, item));
-      row.querySelector('[data-action="delete"]').addEventListener("click", () => deleteItem(type, item.id));
+      row.querySelector(".edit-btn").addEventListener("click", () => fillForm(type, item));
+      row.querySelector(".del-btn").addEventListener("click", async () => {
+        if (!confirm("Delete entry?")) return;
+        await api(`/${type}/${item.id}`, { method: "DELETE" });
+        showToast("Deleted", "success");
+        loadList(type);
+      });
       listEl.appendChild(row);
     });
   }
@@ -184,27 +144,22 @@
     const form = document.getElementById(CONFIG[type].formEl);
     Object.keys(item).forEach(key => {
       const input = form.elements.namedItem(key);
-      if (input) input.value = item[key] ?? "";
+      if (input) {
+        if (input.type === "checkbox") input.checked = Number(item[key]) === 1;
+        else input.value = item[key] ?? "";
+      }
     });
-    if (type === "projects") setPreview("imagePreview", "imagePreviewEmpty", item.image_url);
-    form.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (type === "projects" && item.image_url) setPreview("projectPreview", item.image_url);
+    form.scrollIntoView({ behavior: "smooth" });
   }
 
   function clearForm(type) {
     const form = document.getElementById(CONFIG[type].formEl);
     form.reset();
     form.elements.namedItem("id").value = "";
-    if (type === "projects") setPreview("imagePreview", "imagePreviewEmpty", "");
-  }
-
-  async function deleteItem(type, id) {
-    if (!confirm("Delete this entry?")) return;
-    try {
-      await api(`/${type}/${id}`, { method: "DELETE" });
-      showToast("Deleted", "success");
-      loadList(type);
-    } catch (e) {
-      showToast("Couldn't delete — try again", "error");
+    if (type === "projects") {
+      const img = document.getElementById("projectPreview");
+      if (img) img.style.display = "none";
     }
   }
 
@@ -213,85 +168,127 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const body = {};
-      new FormData(form).forEach((v, k) => { if (k !== "id") body[k] = v; });
+      new FormData(form).forEach((v, k) => {
+        if (k !== "id") body[k] = v;
+      });
+      // Handle checkboxes explicitly
+      const starredBox = form.elements.namedItem("starred");
+      if (starredBox) body.starred = starredBox.checked ? 1 : 0;
+
       const id = form.elements.namedItem("id").value;
-      try {
-        const res = id
-          ? await api(`/${type}/${id}`, { method: "PUT", body: JSON.stringify(body) })
-          : await api(`/${type}`, { method: "POST", body: JSON.stringify(body) });
-        if (res.ok) {
-          showToast(id ? "Updated" : "Added", "success");
-          clearForm(type);
-          loadList(type);
-        } else {
-          const data = await res.json().catch(() => ({}));
-          showToast(data.error || "Save failed", "error");
-        }
-      } catch (e) {
-        showToast("Network error — save failed", "error");
+      const res = id ? await api(`/${type}/${id}`, { method: "PUT", body: JSON.stringify(body) })
+                     : await api(`/${type}`, { method: "POST", body: JSON.stringify(body) });
+      if (res.ok) {
+        showToast(id ? "Updated successfully!" : "Added successfully!", "success");
+        clearForm(type);
+        loadList(type);
+      } else {
+        showToast("Save failed", "error");
       }
     });
-    form.querySelector("[data-cancel-edit]").addEventListener("click", () => clearForm(type));
+    const cancelBtn = form.querySelector("[data-cancel-edit]");
+    if (cancelBtn) cancelBtn.addEventListener("click", () => clearForm(type));
   });
 
-  // ---------- image upload: XHR so we get real progress events ----------
+  // --- Stories Management ---
+  async function loadStories() {
+    const res = await api("/stories");
+    const stories = await res.json();
+    const listEl = document.getElementById("storiesList");
+    listEl.innerHTML = "";
+    if (!Array.isArray(stories) || !stories.length) {
+      listEl.innerHTML = '<p class="empty-note">No active 24h stories.</p>';
+      return;
+    }
+    stories.forEach(s => {
+      const row = document.createElement("div");
+      row.className = "card item-row";
+      row.innerHTML = `
+        <div style="display:flex; align-items:center; gap:12px;">
+          <img src="${escapeHtml(s.media_url)}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;" />
+          <div><strong>Story #${s.id}</strong><div style="font-size:0.8rem; color:var(--text-faint);">${new Date(s.created_at).toLocaleString()}</div></div>
+        </div>
+        <button type="button" class="icon-btn btn-danger">&#10005;</button>
+      `;
+      row.querySelector("button").addEventListener("click", async () => {
+        await api(`/stories/${s.id}`, { method: "DELETE" });
+        showToast("Story deleted", "success");
+        loadStories();
+      });
+      listEl.appendChild(row);
+    });
+  }
 
-  function uploadWithProgress(file, onProgress) {
-    return new Promise((resolve, reject) => {
+  document.getElementById("storyForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const media_url = document.getElementById("storyMediaUrlInput").value;
+    if (!media_url) { showToast("Please upload an image first", "error"); return; }
+    const res = await api("/stories", { method: "POST", body: JSON.stringify({ media_url }) });
+    if (res.ok) {
+      showToast("Story published!", "success");
+      document.getElementById("storyForm").reset();
+      document.getElementById("storyPreview").style.display = "none";
+      loadStories();
+    } else {
+      showToast("Failed to publish story", "error");
+    }
+  });
+
+  // --- File Upload with XHR Progress & Live Preview ---
+  function setPreview(id, url) {
+    let img = document.getElementById(id);
+    if (!img) {
+      img = document.createElement("img");
+      img.id = id;
+      img.style.cssText = "width:80px; height:80px; border-radius:12px; object-fit:cover; margin-top:10px;";
+      document.currentFileInputParent.appendChild(img);
+    }
+    img.src = url;
+    img.style.display = "block";
+  }
+
+  document.querySelectorAll('input[type="file"][data-upload-target]').forEach(fileInput => {
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const targetId = fileInput.dataset.uploadTarget;
+      const targetInput = document.getElementById(targetId);
+
+      fileInput.dataset.uploadTargetParent = true;
+      document.currentFileInputParent = fileInput.parentElement;
+
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "/api/admin/upload");
       xhr.withCredentials = true;
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-      };
-      xhr.onload = () => {
-        let data = {};
-        try { data = JSON.parse(xhr.responseText); } catch (err) {}
-        if (xhr.status >= 200 && xhr.status < 300 && data.url) {
-          resolve(data.url);
-        } else {
-          reject(new Error(data.error || `Upload failed (status ${xhr.status})`));
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) {
+          const pct = Math.round((ev.loaded / ev.total) * 100);
+          showToast(`Uploading... ${pct}%`, "success");
         }
       };
-      xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const data = JSON.parse(xhr.responseText);
+          targetInput.value = data.url;
+          if (targetId === "avatarUrlInput") setPreview("avatarPreview", data.url);
+          if (targetId === "projectImageUrlInput") setPreview("projectPreview", data.url);
+          if (targetId === "storyMediaUrlInput") setPreview("storyPreview", data.url);
+          showToast("Image uploaded successfully!", "success");
+        } else {
+          showToast("Upload failed", "error");
+        }
+      };
       const fd = new FormData();
       fd.append("file", file);
       xhr.send(fd);
     });
-  }
-
-  document.querySelectorAll('input[type="file"][data-upload-target]').forEach(fileInput => {
-    const targetName = fileInput.dataset.uploadTarget;
-    const previewId = fileInput.dataset.previewTarget;
-    const previewEmptyId = fileInput.dataset.previewEmpty;
-    const track = document.getElementById(targetName + "-progress-track");
-    const fill = document.getElementById(targetName + "-progress-fill");
-    const statusEl = document.getElementById(targetName + "-status");
-
-    fileInput.addEventListener("change", async () => {
-      const file = fileInput.files[0];
-      if (!file) return;
-      const form = fileInput.closest("form");
-      const targetInput = form.elements.namedItem(targetName);
-
-      if (track) { track.classList.remove("hidden"); }
-      if (fill) { fill.style.width = "0%"; }
-      if (statusEl) { statusEl.textContent = "Uploading…"; statusEl.style.color = "var(--text-soft)"; }
-
-      try {
-        const url = await uploadWithProgress(file, (pct) => { if (fill) fill.style.width = pct + "%"; });
-        targetInput.value = url;
-        setPreview(previewId, previewEmptyId, url);
-        if (statusEl) { statusEl.textContent = "Uploaded. Click Save to keep it."; statusEl.style.color = "var(--success)"; }
-        showToast("Image uploaded", "success");
-      } catch (err) {
-        if (statusEl) { statusEl.textContent = err.message; statusEl.style.color = "var(--danger)"; }
-        showToast(err.message || "Upload failed", "error");
-      } finally {
-        setTimeout(() => { if (track) track.classList.add("hidden"); }, 600);
-      }
-    });
   });
+
+  function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.textContent = str == null ? "" : String(str);
+    return d.innerHTML;
+  }
 
   checkSession();
 })();

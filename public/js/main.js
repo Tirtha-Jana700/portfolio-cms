@@ -30,7 +30,7 @@
     } catch (e) { return null; }
   }
 
-  // --- Story System Setup ---
+  // --- Stories Setup ---
   let currentStories = [];
   let storyIndex = 0;
   let storyTimer = null;
@@ -44,25 +44,16 @@
       container.style.cursor = "default";
       return;
     }
-
-    const watchedKey = "viewed_stories_timestamp";
-    const lastWatched = localStorage.getItem(watchedKey);
-    const hasUnwatched = currentStories.some(s => !lastWatched || new Date(s.created_at) > new Date(lastWatched));
-
-    if (!hasUnwatched) ring.classList.add("watched");
-
     container.addEventListener("click", () => {
       if (!currentStories.length) return;
       ring.classList.add("watched");
-      localStorage.setItem(watchedKey, new Date().toISOString());
       openStoryModal(0);
     });
   }
 
   function openStoryModal(index) {
     storyIndex = index;
-    const modal = document.getElementById("storyModal");
-    modal.classList.add("active");
+    document.getElementById("storyModal").classList.add("active");
     renderStorySlide();
   }
 
@@ -72,11 +63,8 @@
       return;
     }
     const story = currentStories[storyIndex];
-    const imgWrap = document.getElementById("storyImageWrap");
-    imgWrap.innerHTML = `<img src="${escapeHtml(story.media_url)}" alt="Story" />`;
-
-    const dateStr = new Date(story.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-    document.getElementById("storyTimestamp").textContent = dateStr;
+    document.getElementById("storyImageWrap").innerHTML = `<img src="${escapeHtml(story.media_url)}" alt="Story" />`;
+    document.getElementById("storyTimestamp").textContent = new Date(story.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
     const progressSegments = document.getElementById("storyProgressSegments");
     progressSegments.innerHTML = "";
@@ -111,7 +99,6 @@
     if (p.avatar_url) {
       const img = document.getElementById("avatarImg");
       img.src = p.avatar_url;
-      img.alt = p.full_name || "";
       img.style.display = "block";
     }
 
@@ -176,7 +163,7 @@
     observer.observe(section);
   }
 
-  // --- Projects: Carousel / Grid toggle with Apple Bounce, Star Filter ---
+  // --- Projects: Carousel / Grid toggle & Star Filter ---
   let allProjects = [];
   let currentFilter = "all";
   let currentView = "carousel";
@@ -238,17 +225,9 @@
   });
 
   document.getElementById("viewToggleBtn").addEventListener("click", () => {
-    const container = document.getElementById("projectsContainer");
-    container.style.transform = "scale(0.96)";
-    container.style.opacity = "0.5";
-
-    setTimeout(() => {
-      currentView = currentView === "carousel" ? "grid" : "carousel";
-      document.getElementById("viewToggleBtn").textContent = currentView === "carousel" ? "Switch to Grid View" : "Switch to Carousel View";
-      buildProjectsUI();
-      container.style.transform = "scale(1)";
-      container.style.opacity = "1";
-    }, 200);
+    currentView = currentView === "carousel" ? "grid" : "carousel";
+    document.getElementById("viewToggleBtn").textContent = currentView === "carousel" ? "Switch to Grid View" : "Switch to Carousel View";
+    buildProjectsUI();
   });
 
   function renderExperience(items) {
@@ -258,10 +237,9 @@
     if (!items.length) { section.classList.add("hidden"); return; }
     items.forEach(x => {
       const period = [x.start_date, x.end_date].filter(Boolean).join(" – ");
-      const typeLabel = x.type === "education" ? "Student" : "Work";
       const item = el("div", "card timeline-item");
       item.innerHTML = `
-        <div class="timeline-top"><span class="badge type-badge">${typeLabel}</span></div>
+        <div class="timeline-top"><span class="badge type-badge">${x.type === "education" ? "Student" : "Work"}</span></div>
         <div class="role">${escapeHtml(x.role)}</div>
         ${x.organization ? `<div class="org">${escapeHtml(x.organization)}</div>` : ""}
         ${period ? `<div class="period">${escapeHtml(period)}</div>` : ""}
@@ -279,57 +257,82 @@
     const items = [];
     if (p.email) items.push(["Email", p.email, "mailto:" + p.email]);
     if (p.location) {
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.location)}`;
-      items.push(["Location", p.location, mapsUrl]);
+      items.push(["Location", p.location, `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.location)}`]);
     }
     if (!items.length) { section.classList.add("hidden"); return; }
     items.forEach(([label, value, href]) => {
       const card = el("div", "card contact-card");
-      const inner = `<div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div>`;
-      card.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${inner}</a>`;
+      card.innerHTML = `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></a>`;
       grid.appendChild(card);
     });
     section.classList.remove("hidden");
   }
 
   function renderFooter(p) {
-    const year = new Date().getFullYear();
-    document.getElementById("footerText").textContent = p.full_name ? `© ${year} ${p.full_name}` : `© ${year}`;
+    document.getElementById("footerText").textContent = p.full_name ? `© ${new Date().getFullYear()} ${p.full_name}` : `© ${new Date().getFullYear()}`;
+  }
+
+  // --- Bouncy Sliding Nav Indicator Physics ---
+  function initNavIndicator() {
+    const navLinks = document.getElementById("navLinks");
+    const indicator = document.getElementById("navIndicator");
+    const links = Array.from(document.querySelectorAll(".nav-link"));
+
+    function moveIndicator(link, animate) {
+      if (!link) return;
+      const lRect = link.getBoundingClientRect();
+      const bRect = navLinks.getBoundingClientRect();
+      indicator.style.width = lRect.width + "px";
+      indicator.style.height = lRect.height + "px";
+      indicator.style.left = (lRect.left - bRect.left) + "px";
+      indicator.style.top = (lRect.top - bRect.top) + "px";
+
+      links.forEach(l => l.classList.remove("active"));
+      link.classList.add("active");
+
+      if (animate) {
+        link.classList.remove("bounce");
+        void link.offsetWidth;
+        link.classList.add("bounce");
+      }
+    }
+
+    links.forEach(link => {
+      link.addEventListener("click", () => moveIndicator(link, true));
+    });
+
+    const sections = links.map(l => document.querySelector(l.getAttribute("href"))).filter(Boolean);
+    window.addEventListener("scroll", () => {
+      let fromTop = window.scrollY + 140;
+      sections.forEach((sec, idx) => {
+        if (sec.offsetTop <= fromTop && sec.offsetTop + sec.offsetHeight > fromTop) {
+          moveIndicator(links[idx], false);
+        }
+      });
+    });
+
+    if (links.length) moveIndicator(links[0], false);
   }
 
   function runIntro(profile) {
     const introScreen = document.getElementById("introScreen");
     const mainContent = document.getElementById("mainContent");
-    const introName = document.getElementById("introName");
-    const introTitle = document.getElementById("introTitle");
-    const introAvatarImg = document.getElementById("introAvatarImg");
-
-    if (profile.full_name) introName.textContent = profile.full_name;
-    if (profile.title) introTitle.textContent = profile.title;
+    if (profile.full_name) document.getElementById("introName").textContent = profile.full_name;
+    if (profile.title) document.getElementById("introTitle").textContent = profile.title;
     if (profile.avatar_url) {
-      introAvatarImg.src = profile.avatar_url;
-      introAvatarImg.style.display = "block";
+      const im = document.getElementById("introAvatarImg");
+      im.src = profile.avatar_url;
+      im.style.display = "block";
     }
 
     setTimeout(() => {
       introScreen.classList.add("intro-zoom");
       document.body.classList.remove("pre-reveal");
       mainContent.classList.add("revealed");
+      initNavIndicator();
       setTimeout(() => { introScreen.style.display = "none"; }, 800);
-    }, 2800);
+    }, 2500);
   }
-
-  const navLinks = document.querySelectorAll(".nav-links-box a");
-  window.addEventListener("scroll", () => {
-    let fromTop = window.scrollY + 150;
-    navLinks.forEach(link => {
-      let section = document.querySelector(link.getAttribute("href"));
-      if (section && section.offsetTop <= fromTop && section.offsetTop + section.offsetHeight > fromTop) {
-        navLinks.forEach(l => l.classList.remove("active"));
-        link.classList.add("active");
-      }
-    });
-  });
 
   document.addEventListener("DOMContentLoaded", async () => {
     const data = await fetchPortfolio();

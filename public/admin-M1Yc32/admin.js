@@ -10,17 +10,18 @@
   const loginWrap = document.getElementById("loginWrap");
   const adminShell = document.getElementById("adminShell");
 
-  function showToast(message, type) {
+  function showToast(message, type = "success") {
     const container = document.getElementById("toastContainer");
     if (!container) return;
     const toast = document.createElement("div");
-    toast.className = "toast " + (type === "error" ? "toast-error" : "toast-success");
+    toast.className = `toast toast-${type} toast-in`;
     toast.textContent = message;
     container.appendChild(toast);
     setTimeout(() => {
-      toast.style.opacity = "0";
-      setTimeout(() => toast.remove(), 350);
-    }, 3000);
+      toast.classList.remove("toast-in");
+      toast.classList.add("toast-out");
+      setTimeout(() => toast.remove(), 300);
+    }, 2800);
   }
 
   async function checkSession() {
@@ -34,12 +35,10 @@
   function showLogin() {
     loginWrap.style.display = "flex";
     adminShell.classList.remove("active");
-    adminShell.classList.add("hidden");
   }
 
   function showDashboard() {
     loginWrap.style.display = "none";
-    adminShell.classList.remove("hidden");
     adminShell.classList.add("active");
     loadProfile();
     loadList("skills");
@@ -58,7 +57,6 @@
       if (res.ok) {
         document.getElementById("loginPassword").value = "";
         showDashboard();
-        showToast("Logged in successfully!", "success");
       } else {
         errorBox.textContent = data.error || "Login failed";
         showToast(data.error || "Login failed", "error");
@@ -72,19 +70,13 @@
   document.getElementById("logoutBtn").addEventListener("click", async () => {
     await api("/logout", { method: "POST" });
     showLogin();
-    showToast("Logged out successfully", "success");
   });
 
   document.querySelectorAll(".admin-tab").forEach(tab => {
     tab.addEventListener("click", () => {
-      document.querySelectorAll(".admin-tab").forEach(t => {
-        t.classList.remove("active", "text-brandAccent", "shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]");
-        t.classList.add("text-[#5f7291]");
-      });
-      tab.classList.add("active", "text-brandAccent", "shadow-[inset_3px_3px_7px_#b7b8c2,inset_-3px_-3px_7px_#ffffff]");
-      tab.classList.remove("text-[#5f7291]");
-
+      document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
       document.querySelectorAll(".admin-panel").forEach(p => p.classList.remove("active"));
+      tab.classList.add("active");
       document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
     });
   });
@@ -115,20 +107,25 @@
     return node;
   }
 
+  // --- Profile Loader ---
   let savedAvatarUrl = "";
   async function loadProfile() {
-    const res = await fetch("/api/portfolio");
-    const data = await res.json();
-    const form = document.getElementById("profileForm");
-    const profile = data.profile || {};
-    Object.keys(profile).forEach(key => {
-      const input = form.elements.namedItem(key);
-      if (input) input.value = profile[key] || "";
-    });
-    if (profile.avatar_url) {
-      savedAvatarUrl = profile.avatar_url;
-      document.getElementById("avatarUrlInput").value = profile.avatar_url;
-      renderDualPreviews("avatarPreviewContainer", profile.avatar_url, savedAvatarUrl);
+    try {
+      const res = await fetch("/api/portfolio");
+      const data = await res.json();
+      const form = document.getElementById("profileForm");
+      const profile = data.profile || {};
+      Object.keys(profile).forEach(key => {
+        const input = form.elements.namedItem(key);
+        if (input) input.value = profile[key] || "";
+      });
+      if (profile.avatar_url) {
+        savedAvatarUrl = profile.avatar_url;
+        document.getElementById("avatarUrlInput").value = profile.avatar_url;
+        renderDualPreviews("avatarPreviewContainer", profile.avatar_url, savedAvatarUrl);
+      }
+    } catch (e) {
+      console.error(e);
     }
   }
 
@@ -145,10 +142,11 @@
     }
   });
 
+  // --- CRUD Lists ---
   const CONFIG = {
     skills: { listEl: "skillsList", formEl: "skillForm", titleField: "name", subFn: i => `${i.category || ""} · ${i.level}%` },
     projects: { listEl: "projectsList", formEl: "projectForm", titleField: "title", subFn: i => Number(i.starred) === 1 ? "★ Starred" : i.tech_stack || "" },
-    experience: { listEl: "experienceList", formEl: "experienceForm", titleField: "role", subFn: i => `${i.organization || ""} (${i.start_date || ""} - ${i.end_date || ""})` }
+    experience: { listEl: "experienceList", formEl: "experienceForm", titleField: "role", subFn: i => `${i.organization} (${i.start_date} - ${i.end_date})` }
   };
 
   let savedProjectImgUrl = "";
@@ -159,17 +157,17 @@
     const listEl = document.getElementById(cfg.listEl);
     listEl.innerHTML = "";
     if (!Array.isArray(items) || !items.length) {
-      listEl.innerHTML = '<p class="text-center text-[#93a5be] text-xs py-4">No entries yet.</p>';
+      listEl.innerHTML = '<p class="empty-note">No entries yet.</p>';
       return;
     }
     items.forEach(item => {
       const row = document.createElement("div");
-      row.className = "item-row";
+      row.className = "card item-row";
       row.innerHTML = `
-        <div><strong class="font-bold text-sm">${escapeHtml(item[cfg.titleField])}</strong><div class="text-xs text-[#93a5be] mt-0.5">${escapeHtml(cfg.subFn(item))}</div></div>
-        <div class="flex gap-2">
-          <button type="button" class="w-9 h-9 rounded-full inline-flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b7b8c2,-3px_-3px_6px_#ffffff] text-[#5f7291] text-xs transition-all hover:text-brandAccent edit-btn">&#9998;</button>
-          <button type="button" class="w-9 h-9 rounded-full inline-flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b7b8c2,-3px_-3px_6px_#ffffff] text-[#c0293a] text-xs transition-all hover:opacity-80 del-btn">&#10005;</button>
+        <div><strong>${escapeHtml(item[cfg.titleField])}</strong><div style="font-size:0.8rem; color:var(--text-faint);">${escapeHtml(cfg.subFn(item))}</div></div>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="icon-btn edit-btn bounce-click">&#9998;</button>
+          <button type="button" class="icon-btn btn-danger del-btn bounce-click">&#10005;</button>
         </div>
       `;
       row.querySelector(".edit-btn").addEventListener("click", () => fillForm(type, item));
@@ -180,7 +178,7 @@
           showToast("Deleted successfully", "success");
           loadList(type);
         } else {
-          showToast("Failed to delete", "error");
+          showToast("Failed to delete entry", "error");
         }
       });
       listEl.appendChild(row);
@@ -206,8 +204,7 @@
   function clearForm(type) {
     const form = document.getElementById(CONFIG[type].formEl);
     form.reset();
-    const idInput = form.elements.namedItem("id");
-    if (idInput) idInput.value = "";
+    form.elements.namedItem("id").value = "";
     if (type === "projects") {
       document.getElementById("projectPreviewContainer").innerHTML = "";
       savedProjectImgUrl = "";
@@ -223,8 +220,7 @@
       const starredBox = form.elements.namedItem("starred");
       if (starredBox) body.starred = starredBox.checked ? 1 : 0;
 
-      const idInput = form.elements.namedItem("id");
-      const id = idInput ? idInput.value : "";
+      const id = form.elements.namedItem("id").value;
       const res = id ? await api(`/${type}/${id}`, { method: "PUT", body: JSON.stringify(body) })
                      : await api(`/${type}`, { method: "POST", body: JSON.stringify(body) });
       if (res.ok) {
@@ -240,25 +236,26 @@
     if (cancelBtn) cancelBtn.addEventListener("click", () => clearForm(type));
   });
 
+  // --- Stories Management ---
   async function loadStories() {
     const res = await api("/stories");
     const stories = await res.json();
     const listEl = document.getElementById("storiesList");
     listEl.innerHTML = "";
     if (!Array.isArray(stories) || !stories.length) {
-      listEl.innerHTML = '<p class="text-center text-[#93a5be] text-xs py-4">No active 24h stories.</p>';
+      listEl.innerHTML = '<p class="empty-note">No active 24h stories.</p>';
       return;
     }
     stories.forEach(s => {
       const row = document.createElement("div");
-      row.className = "item-row";
-      const isVid = s.media_url && s.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
+      row.className = "card item-row";
+      const isVid = s.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
       row.innerHTML = `
-        <div class="flex items-center gap-3">
-          ${isVid ? `<video src="${escapeHtml(s.media_url)}" class="w-10 h-10 rounded-lg object-cover" muted></video>` : `<img src="${escapeHtml(s.media_url)}" class="w-10 h-10 rounded-lg object-cover" />`}
-          <div><strong class="font-bold text-sm">Story #${s.id}</strong><div class="text-xs text-[#93a5be] mt-0.5">${escapeHtml(s.caption || "No caption")}</div></div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          ${isVid ? `<video src="${escapeHtml(s.media_url)}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;" muted></video>` : `<img src="${escapeHtml(s.media_url)}" style="width:40px; height:40px; border-radius:8px; object-fit:cover;" />`}
+          <div><strong>Story #${s.id}</strong><div style="font-size:0.8rem; color:var(--text-faint);">${escapeHtml(s.caption || "No caption")}</div></div>
         </div>
-        <button type="button" class="w-9 h-9 rounded-full inline-flex items-center justify-center bg-[#e6e7ee] shadow-[3px_3px_6px_#b7b8c2,-3px_-3px_6px_#ffffff] text-[#c0293a] text-xs transition-all hover:opacity-80">&#10005;</button>
+        <button type="button" class="icon-btn btn-danger bounce-click">&#10005;</button>
       `;
       row.querySelector("button").addEventListener("click", async () => {
         const delRes = await api(`/stories/${s.id}`, { method: "DELETE" });
@@ -289,6 +286,7 @@
     }
   });
 
+  // --- XHR File Upload with Progress Bar & Previews ---
   document.querySelectorAll('input[type="file"][data-upload-target]').forEach(fileInput => {
     fileInput.addEventListener("change", async (e) => {
       const file = e.target.files[0];
@@ -327,11 +325,6 @@
           showToast("Upload failed", "error");
         }
         if (track) setTimeout(() => { track.style.display = "none"; }, 800);
-      };
-
-      xhr.onerror = () => {
-        showToast("Upload network error", "error");
-        if (track) track.style.display = "none";
       };
 
       const fd = new FormData();

@@ -35,7 +35,7 @@
         <div class="story-author-avatar"><img id="storyAuthorAvatar" src="" alt="" /></div>
         <span id="storyAuthorName">Story</span>
       </div>
-      <button class="icon-btn story-close-btn" id="storyCloseBtn">&#10005;</button>
+      <button type="button" class="icon-btn story-close-btn bounce-click" id="storyCloseBtn">&#10005;</button>
     </div>
     <div class="story-media-container" id="storyMediaContainer"></div>
     <div class="story-caption" id="storyCaption"></div>
@@ -59,7 +59,6 @@
   </nav>
 
   <header class="hero container reveal">
-    <!-- Profile picture with Instagram story ring -->
     <div class="avatar-ring-wrapper" id="avatarRingWrapper">
       <div class="avatar-frame" id="avatarFrame" title="Tap to view story">
         <img id="avatarImg" src="" alt="" style="display:none" />
@@ -89,21 +88,20 @@
     </div>
   </section>
 
-  <!-- Projects Section with Filter, View Toggle, and Carousel / Infinite Auto-Scroll -->
+  <!-- Projects Section with Unified Single-Row Controls -->
   <section id="projects" class="hidden reveal">
     <div class="container">
       <h2 class="section-title">Projects</h2>
       <p class="section-subtitle">A few things I've built.</p>
       
-      <div class="projects-controls">
+      <div class="projects-controls-row">
         <div class="filter-group">
-          <button class="btn filter-btn active" data-filter="all">All</button>
-          <button class="btn filter-btn" data-filter="starred">★ Starred</button>
+          <button type="button" class="btn filter-btn active bounce-click" data-filter="all">All</button>
+          <button type="button" class="btn filter-btn bounce-click" data-filter="starred">★ Starred</button>
         </div>
-        <div class="view-toggle-group">
-          <button class="icon-btn view-btn active" id="gridViewBtn" title="Grid View">&#9638;</button>
-          <button class="icon-btn view-btn" id="carouselViewBtn" title="Carousel / Auto-Scroll View">&#8644;</button>
-        </div>
+        <button type="button" class="icon-btn view-toggle-btn bounce-click" id="viewToggleBtn" title="Switch View (Grid / Carousel)">
+          <svg id="viewToggleIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </button>
       </div>
 
       <div class="projects-container grid-view" id="projectsContainer">

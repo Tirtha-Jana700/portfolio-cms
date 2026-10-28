@@ -64,9 +64,9 @@
       wrapper.classList.remove("has-story", "story-seen");
     }
 
-    document.getElementById("avatarFrame").addEventListener("click", () => {
+    document.getElementById("avatarFrame").onclick = () => {
       if (stories.length > 0) openStoryViewer();
-    });
+    };
 
     const actions = document.getElementById("heroActions");
     actions.innerHTML = "";
@@ -94,7 +94,7 @@
     });
   }
 
-  // --- Instagram Story Viewer Implementation ---
+  // --- Story Viewer ---
   function openStoryViewer() {
     const stories = portfolioData?.stories || [];
     if (!stories.length) return;
@@ -103,11 +103,15 @@
     modal.classList.remove("hidden");
     document.getElementById("storyAuthorName").textContent = portfolioData.profile?.full_name || "Story";
     if (portfolioData.profile?.avatar_url) {
-      document.getElementById("storyAuthorAvatar").querySelector("img").src = portfolioData.profile.avatar_url;
+      const avImg = document.getElementById("storyAuthorAvatar").querySelector("img");
+      if (avImg) avImg.src = portfolioData.profile.avatar_url;
     }
     playStory(currentStoryIndex);
 
-    document.getElementById("storyCloseBtn").onclick = closeStoryViewer;
+    document.getElementById("storyCloseBtn").onclick = (e) => {
+      e.stopPropagation();
+      closeStoryViewer();
+    };
   }
 
   function closeStoryViewer() {
@@ -128,14 +132,13 @@
     currentStoryIndex = index;
     const story = stories[index];
 
-    // Render progress indicators
     const barsContainer = document.getElementById("storyProgressBars");
     barsContainer.innerHTML = "";
     stories.forEach((_, i) => {
       const bar = el("div", "story-progress-bar");
       const fill = el("div", "story-progress-fill");
       if (i < index) fill.style.width = "100%";
-      else if (i === index) fill.style.width = "100%"; // animated via CSS
+      else if (i === index) fill.style.width = "100%";
       bar.appendChild(fill);
       barsContainer.appendChild(bar);
     });
@@ -149,6 +152,7 @@
       vid.src = story.media_url;
       vid.autoplay = true;
       vid.playsInline = true;
+      vid.controls = false;
       mediaContainer.appendChild(vid);
       vid.onended = () => playStory(currentStoryIndex + 1);
     } else {
@@ -185,12 +189,11 @@
     section.classList.remove("hidden");
   }
 
-  // --- Projects: Filtering, Starred, Grid vs Carousel & Infinite Auto-Scroll ---
+  // --- Projects: Single-button Toggle & Draggable/Scrollable Carousel ---
   function renderProjects(projects) {
     const section = document.getElementById("projects");
     if (!projects.length) { section.classList.add("hidden"); return; }
     
-    // Filter logic
     let filtered = projects;
     if (currentFilter === "starred") {
       filtered = projects.filter(p => Number(p.starred) === 1);
@@ -210,7 +213,7 @@
       html += `<div class="project-body">
         <div class="project-title-row">
           <h3>${escapeHtml(p.title)}</h3>
-          ${Number(p.starred) === 1 ? '<span class="star-badge" title="Popular / Starred">★</span>' : ''}
+          ${Number(p.starred) === 1 ? '<span class="star-badge" title="Starred / Popular">★</span>' : ''}
         </div>
         <p>${escapeHtml(p.description || "")}</p>
         <div class="tech-tags">${tags.map(t => `<span class="badge">${escapeHtml(t)}</span>`).join("")}</div>
@@ -222,7 +225,6 @@
       return html;
     }
 
-    // Grid items
     filtered.forEach((p, idx) => {
       const card = el("div", "card project-card reveal-project");
       card.style.animationDelay = (idx * 0.08) + "s";
@@ -230,7 +232,6 @@
       grid.appendChild(card);
     });
 
-    // Infinite auto-scroll carousel items (duplicated for seamless loop)
     const carouselItems = [...filtered, ...filtered];
     carouselItems.forEach(p => {
       const card = el("div", "card project-card carousel-card");
@@ -241,7 +242,6 @@
     section.classList.remove("hidden");
   }
 
-  // Hook up controls for filter and view mode
   function initProjectControls() {
     document.querySelectorAll(".filter-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -252,25 +252,55 @@
       });
     });
 
-    const gridViewBtn = document.getElementById("gridViewBtn");
-    const carouselViewBtn = document.getElementById("carouselViewBtn");
+    const toggleBtn = document.getElementById("viewToggleBtn");
+    const toggleIcon = document.getElementById("viewToggleIcon");
     const gridEl = document.getElementById("projectsGrid");
     const carouselEl = document.getElementById("projectsCarousel");
 
-    gridViewBtn.addEventListener("click", () => {
-      gridViewBtn.classList.add("active");
-      carouselViewBtn.classList.remove("active");
-      gridEl.classList.remove("hidden");
-      carouselEl.classList.add("hidden");
-      currentView = "grid";
+    toggleBtn.addEventListener("click", () => {
+      if (currentView === "grid") {
+        currentView = "carousel";
+        gridEl.classList.add("hidden");
+        carouselEl.classList.remove("hidden");
+        // Change icon to Grid
+        toggleIcon.innerHTML = '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>';
+        toggleBtn.title = "Switch to Grid View";
+      } else {
+        currentView = "grid";
+        carouselEl.classList.add("hidden");
+        gridEl.classList.remove("hidden");
+        // Change icon to Carousel / Scroll
+        toggleIcon.innerHTML = '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>';
+        toggleBtn.title = "Switch to Carousel View";
+      }
     });
 
-    carouselViewBtn.addEventListener("click", () => {
-      carouselViewBtn.classList.add("active");
-      gridViewBtn.classList.remove("active");
-      carouselEl.classList.remove("hidden");
-      gridEl.classList.add("hidden");
-      currentView = "carousel";
+    // Make carousel draggable / scrollable with mouse & touch while auto-scrolling
+    const carousel = document.getElementById("projectsCarousel");
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    carousel.addEventListener("mousedown", (e) => {
+      isDown = true;
+      carousel.classList.add("dragging");
+      startX = e.pageX - carousel.offsetLeft;
+      scrollLeft = carousel.scrollLeft;
+    });
+    carousel.addEventListener("mouseleave", () => {
+      isDown = false;
+      carousel.classList.remove("dragging");
+    });
+    carousel.addEventListener("mouseup", () => {
+      isDown = false;
+      carousel.classList.remove("dragging");
+    });
+    carousel.addEventListener("mousemove", (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - carousel.offsetLeft;
+      const walk = (x - startX) * 2;
+      carousel.scrollLeft = scrollLeft - walk;
     });
   }
 
@@ -354,13 +384,13 @@
     io.observe(section);
   }
 
-  // ---------- Navigation with Apple Spring Physics ----------
+  // ---------- Nav Physics & Accurate Contact Scroll Offset ----------
   function initNav() {
     const navLinks = document.getElementById("navLinks");
     const indicator = document.getElementById("navIndicator");
     const links = Array.from(document.querySelectorAll(".nav-link"));
 
-    function positionIndicator(link, animate) {
+    function positionIndicator(link) {
       if (!link) return;
       const lRect = link.getBoundingClientRect();
       const pRect = navLinks.getBoundingClientRect();
@@ -373,7 +403,7 @@
     function setActive(link, animate) {
       links.forEach(l => l.classList.remove("active"));
       link.classList.add("active");
-      positionIndicator(link, animate);
+      positionIndicator(link);
       if (animate) {
         link.classList.remove("bounce");
         void link.offsetWidth;
@@ -382,9 +412,7 @@
     }
 
     links.forEach(link => {
-      link.addEventListener("click", (e) => {
-        setActive(link, true);
-      });
+      link.addEventListener("click", () => setActive(link, true));
     });
 
     const sections = links.map(l => {
@@ -410,10 +438,9 @@
     if (initialLink) setActive(initialLink, false);
     window.addEventListener("resize", () => {
       const active = document.querySelector(".nav-link.active") || links[0];
-      if (active) positionIndicator(active, false);
+      if (active) positionIndicator(active);
     });
 
-    // Global click bouncer for elements with .bounce-click
     document.addEventListener("click", (e) => {
       const target = e.target.closest(".bounce-click");
       if (target) {

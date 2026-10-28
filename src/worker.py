@@ -42,7 +42,7 @@ def d1_first(sql, params=None):
     stmt = env().DB.prepare(sql)
     if params:
         stmt = stmt.bind(*params)
-    result = run_sync(stmt.first())
+    result = to_py(run_sync(stmt.first()))
     return to_py(result)
 
 def d1_run(sql, params=None):
@@ -119,6 +119,7 @@ def get_portfolio():
     projects = d1_all("SELECT * FROM projects ORDER BY sort_order ASC, id DESC")
     experience = d1_all("SELECT * FROM experience ORDER BY sort_order ASC, id ASC")
     
+    # Fixed 24h story cutoff using timezone-aware ISO string comparison
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
     stories = d1_all("SELECT * FROM stories WHERE created_at >= ? ORDER BY id ASC", [cutoff])
 
@@ -163,9 +164,13 @@ def make_crud(table, allowed_fields, required_field, order_sql):
             return jsonify({"error": f"'{required_field}' is required"}), 400
         fields = [f for f in allowed_fields if f in body]
         if table == "projects":
-            fields.append("created_at")
+            if "created_at" not in fields:
+                fields.append("created_at")
             body = dict(body)
             body["created_at"] = now_iso()
+            # Ensure starred is explicitly 0 or 1
+            if "starred" in body:
+                body["starred"] = int(body["starred"])
         cols = ", ".join(fields)
         placeholders = ", ".join(["?"] * len(fields))
         params = [body.get(f) for f in fields]
@@ -179,6 +184,9 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         fields = [f for f in allowed_fields if f in body]
         if not fields:
             return jsonify({"error": "No fields provided"}), 400
+        if table == "projects" and "starred" in body:
+            body = dict(body)
+            body["starred"] = int(body["starred"])
         sets = ", ".join(f"{f} = ?" for f in fields)
         params = [body.get(f) for f in fields] + [item_id]
         d1_run(f"UPDATE {table} SET {sets} WHERE id = ?", params)
@@ -309,5 +317,4 @@ def frontend(path=""):
     return Response(body, status=asset_response.status, headers=asset_response.headers)
 
 Default = wsgi.entrypoint(app)
-
 

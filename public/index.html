@@ -4,136 +4,150 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Portfolio</title>
-
-<meta name="description" content="Personal portfolio — projects, skills, and experience." />
+​<meta name="description" content="Personal portfolio — projects, skills, and stories." />
 <meta name="theme-color" content="#e6e7ee" />
-
-<link rel="stylesheet" href="/css/style.css" />
+​<link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="pre-reveal">
-
-<!-- Intro Splash Screen -->
+​<!-- Intro Screen with Apple-style Fluid Zoom & Spring Animation -->
 <div id="introScreen">
-  <div class="intro-ring-wrap">
-    <svg class="intro-ring" viewBox="0 0 120 120">
-      <circle class="intro-ring-track" cx="60" cy="60" r="54" />
-      <circle class="intro-ring-progress" cx="60" cy="60" r="54" />
-    </svg>
-    <div class="intro-avatar"><img id="introAvatarImg" src="" alt="" style="display:none" /></div>
-  </div>
-  <div class="intro-name" id="introName"></div>
-  <div class="intro-title" id="introTitle"></div>
-  <div class="intro-word">Portfolio</div>
+<div class="intro-backdrop-blur"></div>
+<div class="intro-ring-wrap">
+<svg class="intro-ring" viewBox="0 0 120 120">
+<circle class="intro-ring-track" cx="60" cy="60" r="54" />
+<circle class="intro-ring-progress" cx="60" cy="60" r="54" />
+</svg>
+<div class="intro-avatar">
+<img id="introAvatarImg" src="" alt="Avatar" style="display:none" />
 </div>
-
-<!-- Story Viewer Modal -->
-<div id="storyModal" class="story-modal hidden">
-  <div class="story-modal-content card">
-    <div class="story-progress-bars" id="storyProgressBars"></div>
-    <div class="story-header">
-      <div class="story-author-info">
-        <div class="story-author-avatar"><img id="storyAuthorAvatar" src="" alt="" /></div>
-        <span id="storyAuthorName">Story</span>
-      </div>
-      <button type="button" class="icon-btn story-close-btn bounce-click" id="storyCloseBtn">&#10005;</button>
-    </div>
-    <div class="story-media-container" id="storyMediaContainer"></div>
-    <div class="story-caption" id="storyCaption"></div>
-  </div>
 </div>
-
-<div id="mainContent">
-
-  <nav class="nav">
-    <div class="container nav-inner">
-      <div class="nav-brand">Portfolio</div>
-      <div class="nav-links" id="navLinks">
-        <span class="nav-indicator" id="navIndicator"></span>
-        <a href="#about" class="nav-link">About</a>
-        <a href="#skills" class="nav-link">Skills</a>
-        <a href="#projects" class="nav-link">Projects</a>
-        <a href="#experience" class="nav-link">Experience</a>
-        <a href="#contact" class="nav-link">Contact</a>
-      </div>
-    </div>
-  </nav>
-
-  <header class="hero container reveal">
-    <div class="avatar-ring-wrapper" id="avatarRingWrapper">
-      <div class="avatar-frame" id="avatarFrame" title="Tap to view story">
-        <img id="avatarImg" src="" alt="" style="display:none" />
-      </div>
-    </div>
-    <h1 id="heroName">&nbsp;</h1>
-    <div class="title" id="heroTitle"></div>
-    <p class="tagline" id="heroTagline"></p>
-    <div class="hero-actions" id="heroActions"></div>
-    <div class="social-row" id="socialRow"></div>
-  </header>
-
-  <section id="about" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">About</h2>
-      <div class="card about-card">
-        <p id="aboutBio"></p>
-      </div>
-    </div>
-  </section>
-
-  <section id="skills" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">Skills</h2>
-      <p class="section-subtitle">What I work with day to day.</p>
-      <div class="skills-grid" id="skillsGrid"></div>
-    </div>
-  </section>
-
-  <!-- Projects Section with Unified Single-Row Controls -->
-  <section id="projects" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">Projects</h2>
-      <p class="section-subtitle">A few things I've built.</p>
-      
-      <div class="projects-controls-row">
-        <div class="filter-group">
-          <button type="button" class="btn filter-btn active bounce-click" data-filter="all">All</button>
-          <button type="button" class="btn filter-btn bounce-click" data-filter="starred">★ Starred</button>
-        </div>
-        <button type="button" class="icon-btn view-toggle-btn bounce-click" id="viewToggleBtn" title="Switch View (Grid / Carousel)">
-          <svg id="viewToggleIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        </button>
-      </div>
-
-      <div class="projects-container grid-view" id="projectsContainer">
-        <div class="projects-grid" id="projectsGrid"></div>
-        <div class="projects-carousel hidden" id="projectsCarousel">
-          <div class="carousel-track" id="carouselTrack"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="experience" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">Experience</h2>
-      <div class="timeline" id="timeline"></div>
-    </div>
-  </section>
-
-  <section id="contact" class="hidden reveal">
-    <div class="container">
-      <h2 class="section-title">Get in touch</h2>
-      <div class="contact-grid" id="contactGrid"></div>
-    </div>
-  </section>
-
-  <footer>
-    <span id="footerText"></span>
-  </footer>
-
+<div class="intro-text-group">
+<div class="intro-name" id="introName">Loading...</div>
+<div class="intro-title" id="introTitle"></div>
+<div class="intro-word">Portfolio</div>
 </div>
-
-<script src="/js/main.js"></script>
+</div>
+​<div id="mainContent">
+​<!-- Apple Spring Nav with Fluid Pill Indicator -->
+<nav class="nav">
+<div class="container nav-inner">
+<div class="nav-brand">Portfolio</div>
+<div class="nav-links" id="navLinks">
+<span class="nav-indicator" id="navIndicator"></span>
+<a href="#about" class="nav-link">About</a>
+<a href="#skills" class="nav-link">Skills</a>
+<a href="#projects" class="nav-link">Projects</a>
+<a href="#experience" class="nav-link">Experience</a>
+<a href="#contact" class="nav-link">Contact</a>
+</div>
+</div>
+</nav>
+​<!-- Hero with Instagram-like Story Ring Avatar -->
+<header class="hero container reveal">
+<div class="story-avatar-container" id="storyAvatarContainer" title="Tap to view story">
+<div class="story-ring" id="storyRing">
+<svg viewBox="0 0 160 160" class="ring-svg">
+<circle cx="80" cy="80" r="76" class="story-circle" />
+</svg>
+</div>
+<div class="avatar-frame" id="avatarFrame">
+<img id="avatarImg" src="" alt="Profile" style="display:none" />
+</div>
+<span class="story-badge" id="storyBadge">STORY</span>
+</div>
+​<h1 id="heroName"> </h1>
+<div class="title" id="heroTitle"></div>
+<p class="tagline" id="heroTagline"></p>
+<div class="hero-actions" id="heroActions"></div>
+<div class="social-row" id="socialRow"></div>
+</header>
+​<!-- About Section -->
+<section id="about" class="hidden reveal">
+<div class="container">
+<h2 class="section-title">About</h2>
+<div class="card about-card bounce-card">
+<p id="aboutBio"></p>
+</div>
+</div>
+</section>
+​<!-- Skills Section with Staggered Fluid Bars -->
+<section id="skills" class="hidden reveal">
+<div class="container">
+<h2 class="section-title">Skills</h2>
+<p class="section-subtitle">What I work with day to day.</p>
+<div class="skills-grid" id="skillsGrid"></div>
+</div>
+</section>
+​<!-- Projects Section with Filter, Carousel / Grid Modes & Auto-Scroll -->
+<section id="projects" class="hidden reveal">
+<div class="container">
+<div class="projects-header-wrap">
+<div>
+<h2 class="section-title">Projects</h2>
+<p class="section-subtitle">A few things I've built & shipped.</p>
+</div>
+​<!-- Controls Toolbar -->
+<div class="projects-toolbar">
+<div class="filter-pill-group">
+<button class="filter-pill active" data-filter="all">All</button>
+<button class="filter-pill" data-filter="starred">★ Popular</button>
+</div>
+​<div class="mode-toggles">
+<button class="icon-toggle-btn active" id="viewGridBtn" title="Grid View">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+</button>
+<button class="icon-toggle-btn" id="viewCarouselBtn" title="Carousel View">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg>
+</button>
+<button class="icon-toggle-btn" id="autoScrollBtn" title="Toggle Auto-Scroll">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+</button>
+</div>
+</div>
+</div>
+​<!-- Container that switches between .projects-grid and .projects-carousel -->
+<div id="projectsContainer" class="projects-grid"></div>
+</div>
+</section>
+​<!-- Experience Timeline -->
+<section id="experience" class="hidden reveal">
+<div class="container">
+<h2 class="section-title">Experience</h2>
+<div class="timeline" id="timeline"></div>
+</div>
+</section>
+​<!-- Contact -->
+<section id="contact" class="hidden reveal">
+<div class="container">
+<h2 class="section-title">Get in touch</h2>
+<div class="contact-grid" id="contactGrid"></div>
+</div>
+</section>
+​<footer>
+<span id="footerText"></span>
+</footer>
+​</div>
+​<!-- Instagram / Apple Reel Story Modal -->
+<div id="storyModal" class="story-modal" aria-hidden="true">
+<div class="story-modal-backdrop" id="storyBackdrop"></div>
+<div class="story-dialog">
+<div class="story-progress-bar-wrap" id="storyProgressBars"></div>
+​<div class="story-header">
+<div class="story-author-info">
+<img id="storyModalAuthorImg" src="" alt="Avatar" class="story-modal-author-pfp" />
+<span id="storyModalAuthorName" class="story-modal-author-name"></span>
+</div>
+<button class="story-close-btn" id="storyCloseBtn" aria-label="Close Story">×</button>
+</div>
+​<div class="story-content-area" id="storyContentArea">
+<!-- Image or Video dynamically mounted -->
+</div>
+​<div class="story-caption" id="storyCaption"></div>
+​<!-- Tap Zones for Prev/Next Navigation like Instagram -->
+<div class="story-nav-tap story-nav-left" id="storyTapLeft"></div>
+<div class="story-nav-tap story-nav-right" id="storyTapRight"></div>
+</div>
+</div>
+​<script src="/js/main.js"></script>
 </body>
 </html>
-

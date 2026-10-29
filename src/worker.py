@@ -1,5 +1,6 @@
 """
 Portfolio backend — Flask app running on Cloudflare Python Workers.
+Compatible with D1 SQL Database and R2 storage bindings.
 """
 
 import json
@@ -42,7 +43,7 @@ def d1_first(sql, params=None):
     stmt = env().DB.prepare(sql)
     if params:
         stmt = stmt.bind(*params)
-    result = to_py(run_sync(stmt.first()))
+    result = run_sync(stmt.first())
     return to_py(result)
 
 def d1_run(sql, params=None):
@@ -88,18 +89,28 @@ def cookie_is_secure():
     host = request.host.split(":")[0]
     return host not in ("localhost", "127.0.0.1")
 
+# ---------- Authentication Routes ----------
+
 @app.post("/api/admin/login")
 def admin_login():
     body = request.get_json(silent=True) or {}
     password = body.get("password", "")
     stored_hash = getattr(env(), "ADMIN_PASSWORD_HASH", None)
     if not stored_hash:
-        return jsonify({"error": "Admin password not configured."}), 500
+        return jsonify({"error": "Admin password not configured in Cloudflare environment secrets."}), 500
     if not password or not custom_check_password(stored_hash, password):
         return jsonify({"error": "Incorrect password"}), 401
     token = serializer().dumps({"adm": True})
     resp = jsonify({"ok": True})
-    resp.set_cookie(ADMIN_COOKIE, token, max_age=SESSION_MAX_AGE, httponly=True, secure=cookie_is_secure(), samesite="Strict", path="/api/admin")
+    resp.set_cookie(
+        ADMIN_COOKIE,
+        token,
+        max_age=SESSION_MAX_AGE,
+        httponly=True,
+        secure=cookie_is_secure(),
+        samesite="Strict",
+        path="/api/admin"
+    )
     return resp
 
 @app.post("/api/admin/logout")
@@ -112,6 +123,8 @@ def admin_logout():
 def admin_session():
     return jsonify({"authenticated": is_authenticated()})
 
+# ---------- Public Portfolio Data API ----------
+
 @app.get("/api/portfolio")
 def get_portfolio():
     profile = d1_first("SELECT * FROM profile WHERE id = 1") or {}
@@ -119,7 +132,7 @@ def get_portfolio():
     projects = d1_all("SELECT * FROM projects ORDER BY sort_order ASC, id DESC")
     experience = d1_all("SELECT * FROM experience ORDER BY sort_order ASC, id ASC")
     
-    # Fixed 24h story cutoff using timezone-aware ISO string comparison
+    # Instagram-style 24-hour expiration window
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
     stories = d1_all("SELECT * FROM stories WHERE created_at >= ? ORDER BY id ASC", [cutoff])
 
@@ -131,9 +144,11 @@ def get_portfolio():
         "stories": stories,
     })
 
+# ---------- Profile Management ----------
+
 PROFILE_FIELDS = [
     "full_name", "title", "tagline", "bio", "avatar_url", "resume_url",
-    "email", "location", "github_url", "linkedin_url",
+    "email", "phone", "location", "github_url", "linkedin_url",
     "twitter_url", "instagram_url", "youtube_url",
 ]
 
@@ -153,6 +168,8 @@ def update_profile():
     d1_run(f"UPDATE profile SET {', '.join(sets)} WHERE id = 1", params)
     return jsonify(d1_first("SELECT * FROM profile WHERE id = 1"))
 
+# ---------- Generic CRUD Factory ----------
+
 def make_crud(table, allowed_fields, required_field, order_sql):
     def list_items():
         return jsonify(d1_all(f"SELECT * FROM {table} ORDER BY {order_sql}"))
@@ -164,13 +181,9 @@ def make_crud(table, allowed_fields, required_field, order_sql):
             return jsonify({"error": f"'{required_field}' is required"}), 400
         fields = [f for f in allowed_fields if f in body]
         if table == "projects":
-            if "created_at" not in fields:
-                fields.append("created_at")
+            fields.append("created_at")
             body = dict(body)
             body["created_at"] = now_iso()
-            # Ensure starred is explicitly 0 or 1
-            if "starred" in body:
-                body["starred"] = int(body["starred"])
         cols = ", ".join(fields)
         placeholders = ", ".join(["?"] * len(fields))
         params = [body.get(f) for f in fields]
@@ -184,9 +197,6 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         fields = [f for f in allowed_fields if f in body]
         if not fields:
             return jsonify({"error": "No fields provided"}), 400
-        if table == "projects" and "starred" in body:
-            body = dict(body)
-            body["starred"] = int(body["starred"])
         sets = ", ".join(f"{f} = ?" for f in fields)
         params = [body.get(f) for f in fields] + [item_id]
         d1_run(f"UPDATE {table} SET {sets} WHERE id = ?", params)
@@ -208,6 +218,7 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         admin_required(delete_item),
     )
 
+# Skills Endpoints
 skills_list, skills_create, skills_update, skills_delete = make_crud(
     "skills", ["name", "category", "level", "sort_order"], "name", "sort_order ASC, id ASC"
 )
@@ -216,6 +227,7 @@ app.post("/api/admin/skills")(skills_create)
 app.put("/api/admin/skills/<int:item_id>")(skills_update)
 app.delete("/api/admin/skills/<int:item_id>")(skills_delete)
 
+# Projects Endpoints (using renamed 'starred' column)
 projects_list, projects_create, projects_update, projects_delete = make_crud(
     "projects",
     ["title", "description", "image_url", "tech_stack", "live_url", "repo_url", "starred", "sort_order"],
@@ -226,6 +238,7 @@ app.post("/api/admin/projects")(projects_create)
 app.put("/api/admin/projects/<int:item_id>")(projects_update)
 app.delete("/api/admin/projects/<int:item_id>")(projects_delete)
 
+# Experience Endpoints
 experience_list, experience_create, experience_update, experience_delete = make_crud(
     "experience",
     ["type", "role", "organization", "start_date", "end_date", "description", "sort_order"],
@@ -235,6 +248,8 @@ app.get("/api/admin/experience")(experience_list)
 app.post("/api/admin/experience")(experience_create)
 app.put("/api/admin/experience/<int:item_id>")(experience_update)
 app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
+
+# ---------- Instagram Stories & Reels Management ----------
 
 @app.get("/api/admin/stories")
 @admin_required
@@ -259,6 +274,8 @@ def admin_delete_story(story_id):
     d1_run("DELETE FROM stories WHERE id = ?", [story_id])
     return jsonify({"ok": True})
 
+# ---------- R2 Storage Upload & Media Serving ----------
+
 def get_bucket():
     e = env()
     return getattr(e, "BUCKET", None) or getattr(e, "MEDIA", None)
@@ -268,7 +285,7 @@ def get_bucket():
 def upload_image():
     bucket = get_bucket()
     if bucket is None:
-        return jsonify({"error": "R2 bucket binding not found."}), 501
+        return jsonify({"error": "R2 bucket binding not found in wrangler config."}), 501
     file = request.files.get("file")
     if not file:
         return jsonify({"error": "No file provided"}), 400
@@ -308,6 +325,8 @@ def serve_media(key):
     except Exception as e:
         return Response(f"Error serving media: {str(e)}", status=500)
 
+# ---------- Static Assets Fallback ----------
+
 @app.get("/")
 @app.get("/<path:path>")
 def frontend(path=""):
@@ -317,4 +336,3 @@ def frontend(path=""):
     return Response(body, status=asset_response.status, headers=asset_response.headers)
 
 Default = wsgi.entrypoint(app)
-

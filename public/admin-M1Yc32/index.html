@@ -1,195 +1,438 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="robots" content="noindex, nofollow, noarchive" />
-<title>Admin Dashboard</title>
-<link rel="stylesheet" href="/css/style.css" />
-<link rel="stylesheet" href="admin.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Spatial Admin CMS — Portfolio</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#07090e" />
+  <!-- Core Design System & Dedicated Admin Styles -->
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="./admin.css" />
 </head>
 <body>
-​<div class="login-wrap" id="loginWrap">
-<div class="card login-card">
-<div class="login-logo-circle">
-<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-</div>
-<h1>Admin Sign In</h1>
-<p>Authenticate to manage your portfolio, upload reels, and update projects.</p>
-<form id="loginForm">
-<div class="field">
-<input type="password" id="loginPassword" placeholder="Enter master password" autocomplete="current-password" required />
-</div>
-<button type="submit" class="btn btn-accent" style="width:100%; justify-content:center;">Unlock Dashboard</button>
-<div class="login-error" id="loginError"></div>
-</form>
-</div>
-</div>
-​<div class="admin-shell" id="adminShell">
-<div class="admin-topbar">
-<div class="container admin-topbar-inner">
-<div class="admin-brand">
-<span class="admin-dot"></span>
-<strong>Portfolio Admin</strong>
-</div>
-<button class="btn btn-sm" id="logoutBtn">Log out</button>
-</div>
-</div>
-​<div class="container">
-<div class="admin-tabs-nav">
-<button class="admin-tab active" data-tab="profile">Profile</button>
-<button class="admin-tab" data-tab="skills">Skills</button>
-<button class="admin-tab" data-tab="projects">Projects</button>
-<button class="admin-tab" data-tab="experience">Experience</button>
-<button class="admin-tab" data-tab="stories">24h Stories</button>
-</div>
-​<!-- Profile Tab -->
-<div class="admin-panel active" id="panel-profile">
-<form id="profileForm" class="card">
-<h3>Edit Personal Information</h3>
-<div class="form-grid">
-<div class="field"><label>Full Name</label><input name="full_name" placeholder="John Appleseed" /></div>
-<div class="field"><label>Title</label><input name="title" placeholder="Design Engineer" /></div>
-<div class="field span-2"><label>Tagline</label><input name="tagline" placeholder="Crafting delightful tactile interfaces." /></div>
-<div class="field span-2"><label>Bio</label><textarea name="bio" rows="4"></textarea></div>
-​<div class="field span-2">
-<label>Avatar Photo</label>
-<input type="hidden" name="avatar_url" id="avatarUrlInput" />
-<div class="file-dropzone" id="avatarDropzone">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-<span>Tap to choose an avatar picture</span>
-<input type="file" accept="image/*" data-upload-target="avatarUrlInput" data-progress-id="avatarProgress" data-preview-id="avatarPreviewContainer" />
-</div>
-<div class="upload-progress-track" id="avatarProgress"><div class="upload-progress-fill"></div></div>
-<div class="preview-container" id="avatarPreviewContainer"></div>
-</div>
-​<div class="field"><label>Resume URL</label><input name="resume_url" /></div>
-<div class="field"><label>Email</label><input name="email" type="email" /></div>
-<div class="field span-2"><label>Location</label><input name="location" /></div>
-​<div class="field"><label>GitHub URL</label><input name="github_url" /></div>
-<div class="field"><label>LinkedIn URL</label><input name="linkedin_url" /></div>
-<div class="field"><label>Twitter / X URL</label><input name="twitter_url" /></div>
-<div class="field"><label>Instagram URL</label><input name="instagram_url" /></div>
-<div class="field"><label>YouTube URL</label><input name="youtube_url" /></div>
-</div>
-<div class="form-actions" style="margin-top:24px;">
-<button type="submit" class="btn btn-accent">Save Profile</button>
-</div>
-</form>
-</div>
-​<!-- Skills Tab -->
-<div class="admin-panel" id="panel-skills">
-<div class="item-list" id="skillsList"></div>
-<form id="skillForm" class="card">
-<h3>Add or Update Skill</h3>
-<input type="hidden" name="id" />
-<div class="form-grid">
-<div class="field"><label>Skill Name</label><input name="name" required placeholder="e.g. Swift, TypeScript" /></div>
-<div class="field"><label>Category</label><input name="category" placeholder="e.g. Engineering, Design" /></div>
-<div class="field"><label>Proficiency Level (0–100%)</label><input name="level" type="number" min="0" max="100" value="85" /></div>
-<div class="field"><label>Sort Order</label><input name="sort_order" type="number" value="0" /></div>
-</div>
-<div class="form-actions">
-<button type="submit" class="btn btn-accent">Save Skill</button>
-<button type="button" class="btn" data-cancel-edit>Clear</button>
-</div>
-</form>
-</div>
-​<!-- Projects Tab -->
-<div class="admin-panel" id="panel-projects">
-<div class="item-list" id="projectsList"></div>
-<form id="projectForm" class="card">
-<h3>Add or Update Project</h3>
-<input type="hidden" name="id" />
-<div class="form-grid">
-<div class="field span-2"><label>Title</label><input name="title" required placeholder="Project Title" /></div>
-<div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
-<div class="field span-2">
-<label>Project Cover Image</label>
-<input type="hidden" name="image_url" id="projectImageUrlInput" />
-<div class="file-dropzone" id="projectDropzone">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-<span>Tap to choose cover image</span>
-<input type="file" accept="image/*" data-upload-target="projectImageUrlInput" data-progress-id="projectProgress" data-preview-id="projectPreviewContainer" />
-</div>
-<div class="upload-progress-track" id="projectProgress"><div class="upload-progress-fill"></div></div>
-<div class="preview-container" id="projectPreviewContainer"></div>
-</div>
-<div class="field span-2"><label>Tech Stack (Comma-separated)</label><input name="tech_stack" placeholder="React, Node.js, Cloudflare" /></div>
-<div class="field"><label>Live URL</label><input name="live_url" placeholder="https://" /></div>
-<div class="field"><label>Repo URL</label><input name="repo_url" placeholder="https://github.com/..." /></div>
-<div class="field span-2">
-<div class="star-toggle-row">
-<input type="checkbox" name="starred" value="1" id="starredCheck" />
-<label for="starredCheck" class="star-check-label">★ Mark as Starred (Featured on Homepage)</label>
-</div>
-</div>
-<div class="field"><label>Sort Order</label><input name="sort_order" type="number" value="0" /></div>
-</div>
-<div class="form-actions">
-<button type="submit" class="btn btn-accent">Save Project</button>
-<button type="button" class="btn" data-cancel-edit>Clear</button>
-</div>
-</form>
-</div>
-​<!-- Experience Tab -->
-<div class="admin-panel" id="panel-experience">
-<div class="item-list" id="experienceList"></div>
-<form id="experienceForm" class="card">
-<h3>Add or Update Experience</h3>
-<input type="hidden" name="id" />
-<div class="form-grid">
-<div class="field">
-<label>Type</label>
-<select name="type">
-<option value="work">Work</option>
-<option value="education">Student</option>
-</select>
-</div>
-<div class="field"><label>Sort Order</label><input name="sort_order" type="number" value="0" /></div>
-<div class="field"><label>Role / Position</label><input name="role" required /></div>
-<div class="field"><label>Company / Organization</label><input name="organization" /></div>
-<div class="field"><label>Start Date</label><input name="start_date" placeholder="e.g. 2022" /></div>
-<div class="field"><label>End Date</label><input name="end_date" placeholder="e.g. Present" /></div>
-<div class="field span-2"><label>Description</label><textarea name="description" rows="3"></textarea></div>
-</div>
-<div class="form-actions">
-<button type="submit" class="btn btn-accent">Save Entry</button>
-<button type="button" class="btn" data-cancel-edit>Clear</button>
-</div>
-</form>
-</div>
-​<!-- 24h Instagram Stories & Reels Tab -->
-<div class="admin-panel" id="panel-stories">
-<div class="item-list" id="storiesList"></div>
-<form id="storyForm" class="card">
-<h3>Upload New Story (Active for 24 Hours)</h3>
-<p style="color:var(--text-soft); font-size:0.9rem; margin-top:-6px;">Stories appear with an Instagram ring around your avatar on the home page and expire automatically after 24 hours.</p>
-<div class="form-grid">
-<div class="field span-2">
-<label>Story Media (Photo or Reel Video)</label>
-<input type="hidden" name="media_url" id="storyMediaUrlInput" />
-<div class="file-dropzone" id="storyDropzone">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-<span>Tap to upload Story Photo or Reel (.mp4, .webm, .jpg, .png)</span>
-<input type="file" accept="image/*,video/*" data-upload-target="storyMediaUrlInput" data-progress-id="storyProgress" data-preview-id="storyPreviewContainer" />
-</div>
-<div class="upload-progress-track" id="storyProgress"><div class="upload-progress-fill"></div></div>
-<div class="preview-container" id="storyPreviewContainer"></div>
-</div>
-<div class="field span-2">
-<label>Caption</label>
-<input name="caption" placeholder="Add a caption to display over your reel..." />
-</div>
-</div>
-<div class="form-actions">
-<button type="submit" class="btn btn-accent">Publish Story</button>
-</div>
-</form>
-</div>
-​</div>
-</div>
-​<div id="toastContainer"></div>
-<script src="admin.js"></script>
+
+  <!-- Ambient Spatial Background Glow Orbs -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- 1. Authentication Gate -->
+  <div id="loginGate" class="login-wrapper">
+    <form id="loginForm" class="card login-card">
+      <div class="login-lock-icon">🔒</div>
+      <h1 style="margin: 0 0 6px; font-size: 1.5rem;">Spatial Admin CMS</h1>
+      <p style="color: var(--text-soft); font-size: 0.9rem; margin: 0 0 24px;">
+        Enter your administrator password to unlock your portfolio studio.
+      </p>
+      <div class="field" style="text-align: left;">
+        <label for="adminPasswordInput">Admin Password</label>
+        <input type="password" id="adminPasswordInput" placeholder="••••••••••••" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn-accent" style="width: 100%;" id="loginSubmitBtn">
+        Unlock Dashboard
+      </button>
+    </form>
+  </div>
+
+  <!-- 2. Main Admin Dashboard Application -->
+  <div id="adminApp" class="admin-shell container hidden">
+
+    <!-- Header -->
+    <header class="admin-header card">
+      <div class="admin-title-group">
+        <h1>Spatial Glass Studio</h1>
+        <p>Connected to Cloudflare D1 Database (6 Tables Active)</p>
+      </div>
+      <div class="admin-header-actions">
+        <a href="/" target="_blank" class="btn btn-sm">View Live Site ↗</a>
+        <button type="button" id="logoutBtn" class="btn btn-danger btn-sm">Lock / Logout</button>
+      </div>
+    </header>
+
+    <!-- Sliding Bouncy Pill Tab Bar -->
+    <div class="admin-tabs-wrap">
+      <div class="admin-tabs" id="adminTabs" role="tablist">
+        <span class="admin-tab-indicator" id="adminTabIndicator"></span>
+        <button type="button" class="admin-tab-btn active" data-tab="profile">Profile & Socials</button>
+        <button type="button" class="admin-tab-btn" data-tab="stories">24h Stories & Reels</button>
+        <button type="button" class="admin-tab-btn" data-tab="projects">Projects (★ Star)</button>
+        <button type="button" class="admin-tab-btn" data-tab="skills">Skills</button>
+        <button type="button" class="admin-tab-btn" data-tab="experience">Experience</button>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 1: PROFILE & SOCIALS ==================== -->
+    <section id="tab-profile" class="admin-tab-pane">
+      <form id="profileForm" class="card">
+        <h2 style="margin-top: 0;">Profile, Bio & Social Links</h2>
+
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="profFullName">Full Name</label>
+            <input type="text" id="profFullName" placeholder="Your Name" required />
+          </div>
+          <div class="field">
+            <label for="profTitle">Role / Headline</label>
+            <input type="text" id="profTitle" placeholder="Full-Stack Developer" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="profTagline">Hero Tagline</label>
+          <input type="text" id="profTagline" placeholder="Crafting spatial web applications and tactile interfaces." />
+        </div>
+
+        <div class="field">
+          <label for="profBio">About Bio</label>
+          <textarea id="profBio" rows="4" placeholder="Write your professional bio..."></textarea>
+        </div>
+
+        <!-- Avatar Upload & Dual Preview -->
+        <div class="form-grid-2">
+          <div class="field">
+            <label>Profile Avatar (Upload or Paste URL)</label>
+            <div class="upload-dropzone" id="avatarDropzone">
+              <input type="file" id="avatarFileInput" accept="image/*" />
+              <div class="dropzone-title">Tap or Drop Avatar Image</div>
+              <div class="dropzone-sub">PNG, JPG, WEBP — Live Progress Upload</div>
+            </div>
+            <div class="upload-progress-wrap hidden" id="avatarProgressWrap">
+              <div class="upload-progress-meta">
+                <span>Uploading Avatar...</span>
+                <span id="avatarProgressPct">0%</span>
+              </div>
+              <div class="upload-progress-track">
+                <div class="upload-progress-fill" id="avatarProgressFill"></div>
+              </div>
+            </div>
+            <input type="text" id="profAvatarUrl" placeholder="Or paste image URL / data URI" />
+            <div class="dual-preview-row">
+              <div class="preview-box">
+                <div class="preview-box-label">Saved in DB</div>
+                <div class="preview-media-frame" id="avatarSavedPreview">None</div>
+              </div>
+              <div class="preview-box">
+                <div class="preview-box-label">Current / Staged</div>
+                <div class="preview-media-frame" id="avatarCurrentPreview">None</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resume & Contact Info -->
+          <div>
+            <div class="field">
+              <label>Resume PDF / Link</label>
+              <div class="upload-dropzone" id="resumeDropzone">
+                <input type="file" id="resumeFileInput" accept=".pdf,image/*" />
+                <div class="dropzone-title">Tap or Drop Resume PDF</div>
+                <div class="dropzone-sub">Live upload progress tracking</div>
+              </div>
+              <div class="upload-progress-wrap hidden" id="resumeProgressWrap">
+                <div class="upload-progress-meta">
+                  <span>Uploading Resume...</span>
+                  <span id="resumeProgressPct">0%</span>
+                </div>
+                <div class="upload-progress-track">
+                  <div class="upload-progress-fill" id="resumeProgressFill"></div>
+                </div>
+              </div>
+              <input type="text" id="profResumeUrl" placeholder="https://..." />
+            </div>
+
+            <div class="field">
+              <label for="profEmail">Email Address</label>
+              <input type="email" id="profEmail" placeholder="you@example.com" />
+            </div>
+            <div class="form-grid-2">
+              <div class="field">
+                <label for="profPhone">Phone</label>
+                <input type="text" id="profPhone" placeholder="+91 ..." />
+              </div>
+              <div class="field">
+                <label for="profLocation">Location</label>
+                <input type="text" id="profLocation" placeholder="West Bengal, India" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin: 18px 0 12px;">Social Profile URLs</h3>
+        <div class="form-grid-2">
+          <div class="field">
+            <label for="profGithub">GitHub URL</label>
+            <input type="url" id="profGithub" placeholder="https://github.com/..." />
+          </div>
+          <div class="field">
+            <label for="profLinkedin">LinkedIn URL</label>
+            <input type="url" id="profLinkedin" placeholder="https://linkedin.com/in/..." />
+          </div>
+          <div class="field">
+            <label for="profTwitter">Twitter / X URL</label>
+            <input type="url" id="profTwitter" placeholder="https://x.com/..." />
+          </div>
+          <div class="field">
+            <label for="profInstagram">Instagram URL</label>
+            <input type="url" id="profInstagram" placeholder="https://instagram.com/..." />
+          </div>
+          <div class="field">
+            <label for="profYoutube">YouTube URL</label>
+            <input type="url" id="profYoutube" placeholder="https://youtube.com/@..." />
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-accent">Save Profile Changes</button>
+      </form>
+    </section>
+
+    <!-- ==================== TAB 2: 24H STORIES & REELS ==================== -->
+    <section id="tab-stories" class="admin-tab-pane hidden">
+      <div class="admin-section-grid">
+        <form id="storyForm" class="card">
+          <h2 style="margin-top: 0;">Publish 24h Story / Video Reel</h2>
+          <p style="color: var(--text-soft); font-size: 0.88rem; margin-top: -8px; margin-bottom: 18px;">
+            Stories trigger the spinning Instagram gradient ring on your avatar and expire automatically after 24 hours.
+          </p>
+
+          <div class="field">
+            <label>Story Media (Image or MP4/WebM Video Reel)</label>
+            <div class="upload-dropzone" id="storyDropzone">
+              <input type="file" id="storyFileInput" accept="image/*,video/mp4,video/webm,video/quicktime" />
+              <div class="dropzone-title">Drop Photo or Video Reel Here</div>
+              <div class="dropzone-sub">Supports Images (5s timer) & Videos (full duration)</div>
+            </div>
+            <div class="upload-progress-wrap hidden" id="storyProgressWrap">
+              <div class="upload-progress-meta">
+                <span>Uploading Story Media...</span>
+                <span id="storyProgressPct">0%</span>
+              </div>
+              <div class="upload-progress-track">
+                <div class="upload-progress-fill" id="storyProgressFill"></div>
+              </div>
+            </div>
+            <input type="text" id="storyMediaUrl" placeholder="Or paste direct image / video (.mp4) URL" required />
+            <div class="preview-box" style="margin-top: 10px;">
+              <div class="preview-box-label">Staged Story Preview</div>
+              <div class="preview-media-frame" id="storyCurrentPreview" style="height: 180px;">No media selected</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="storyCaption">Story Caption (Optional)</label>
+            <input type="text" id="storyCaption" placeholder="Building spatial web apps ✨" />
+          </div>
+
+          <button type="submit" class="btn btn-accent" style="width: 100%;">Publish to 24h Story Ring</button>
+        </form>
+
+        <div>
+          <h3 style="margin-top: 0;">Active 24h Stories</h3>
+          <div id="adminStoriesList" class="admin-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: PROJECTS (★ STARRED) ==================== -->
+    <section id="tab-projects" class="admin-tab-pane hidden">
+      <div class="admin-section-grid">
+        <form id="projectForm" class="card">
+          <h2 id="projectFormHeading" style="margin-top: 0;">Add New Project</h2>
+          <input type="hidden" id="projId" />
+
+          <!-- Mark as Star Toggle Switch -->
+          <div class="star-switch-row">
+            <div class="star-switch-info">
+              <span class="star-switch-title">★ Mark as Popular / Starred</span>
+              <span class="star-switch-desc">Pins project to Featured Creations & Starred filter</span>
+            </div>
+            <label class="ios-switch" aria-label="Mark project as starred">
+              <input type="checkbox" id="projStarred" />
+              <span class="ios-slider"></span>
+            </label>
+          </div>
+
+          <div class="field">
+            <label for="projTitle">Project Title</label>
+            <input type="text" id="projTitle" placeholder="Project Name" required />
+          </div>
+
+          <div class="field">
+            <label for="projDesc">Description</label>
+            <textarea id="projDesc" rows="3" placeholder="Explain what the project does..."></textarea>
+          </div>
+
+          <div class="field">
+            <label for="projTech">Tech Stack (Comma-separated)</label>
+            <input type="text" id="projTech" placeholder="React, Vite, Python Flask, Cloudflare D1" />
+          </div>
+
+          <!-- Project Cover Upload & Dual Preview -->
+          <div class="field">
+            <label>Project Cover Image</label>
+            <div class="upload-dropzone" id="projDropzone">
+              <input type="file" id="projFileInput" accept="image/*" />
+              <div class="dropzone-title">Tap or Drop Project Cover</div>
+              <div class="dropzone-sub">16:10 recommended aspect ratio</div>
+            </div>
+            <div class="upload-progress-wrap hidden" id="projProgressWrap">
+              <div class="upload-progress-meta">
+                <span>Uploading Cover...</span>
+                <span id="projProgressPct">0%</span>
+              </div>
+              <div class="upload-progress-track">
+                <div class="upload-progress-fill" id="projProgressFill"></div>
+              </div>
+            </div>
+            <input type="text" id="projImageUrl" placeholder="Or paste cover image URL" />
+            <div class="dual-preview-row">
+              <div class="preview-box">
+                <div class="preview-box-label">Saved Cover</div>
+                <div class="preview-media-frame" id="projSavedPreview">None</div>
+              </div>
+              <div class="preview-box">
+                <div class="preview-box-label">Staged Cover</div>
+                <div class="preview-media-frame" id="projCurrentPreview">None</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="projLiveUrl">Live Demo URL</label>
+              <input type="url" id="projLiveUrl" placeholder="https://..." />
+            </div>
+            <div class="field">
+              <label for="projRepoUrl">GitHub Repo URL</label>
+              <input type="url" id="projRepoUrl" placeholder="https://github.com/..." />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="projSortOrder">Sort Order (Lower numbers appear first)</label>
+            <input type="number" id="projSortOrder" value="0" />
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-accent" style="flex: 1;">Save Project</button>
+            <button type="button" id="projCancelEditBtn" class="btn hidden">Cancel Edit</button>
+          </div>
+        </form>
+
+        <div>
+          <h3 style="margin-top: 0;">Saved Projects</h3>
+          <div id="adminProjectsList" class="admin-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: SKILLS ==================== -->
+    <section id="tab-skills" class="admin-tab-pane hidden">
+      <div class="admin-section-grid">
+        <form id="skillForm" class="card">
+          <h2 id="skillFormHeading" style="margin-top: 0;">Add Skill</h2>
+          <input type="hidden" id="skillId" />
+
+          <div class="field">
+            <label for="skillName">Skill / Technology Name</label>
+            <input type="text" id="skillName" placeholder="React / Python" required />
+          </div>
+
+          <div class="field">
+            <label for="skillCategory">Category Badge</label>
+            <input type="text" id="skillCategory" placeholder="Frontend / Backend" />
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="skillLevel">Proficiency (0 - 100%)</label>
+              <input type="number" id="skillLevel" min="0" max="100" value="85" required />
+            </div>
+            <div class="field">
+              <label for="skillSortOrder">Sort Order</label>
+              <input type="number" id="skillSortOrder" value="0" />
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-accent" style="flex: 1;">Save Skill</button>
+            <button type="button" id="skillCancelEditBtn" class="btn hidden">Cancel</button>
+          </div>
+        </form>
+
+        <div>
+          <h3 style="margin-top: 0;">Saved Skills</h3>
+          <div id="adminSkillsList" class="admin-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: EXPERIENCE & EDUCATION ==================== -->
+    <section id="tab-experience" class="admin-tab-pane hidden">
+      <div class="admin-section-grid">
+        <form id="expForm" class="card">
+          <h2 id="expFormHeading" style="margin-top: 0;">Add Timeline Entry</h2>
+          <input type="hidden" id="expId" />
+
+          <div class="field">
+            <label for="expType">Entry Type</label>
+            <select id="expType">
+              <option value="work">Work Experience</option>
+              <option value="education">Education</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="expRole">Role / Degree Title</label>
+            <input type="text" id="expRole" placeholder="Electrical Engineering Undergraduate" required />
+          </div>
+
+          <div class="field">
+            <label for="expOrg">Organization / University</label>
+            <input type="text" id="expOrg" placeholder="Techno India University" required />
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="expStartDate">Start Date</label>
+              <input type="text" id="expStartDate" placeholder="July 2026" />
+            </div>
+            <div class="field">
+              <label for="expEndDate">End Date (Leave blank for Present)</label>
+              <input type="text" id="expEndDate" placeholder="Present" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="expDesc">Description / Highlights</label>
+            <textarea id="expDesc" rows="3" placeholder="Key responsibilities or coursework..."></textarea>
+          </div>
+
+          <div class="field">
+            <label for="expSortOrder">Sort Order</label>
+            <input type="number" id="expSortOrder" value="0" />
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-accent" style="flex: 1;">Save Entry</button>
+            <button type="button" id="expCancelEditBtn" class="btn hidden">Cancel</button>
+          </div>
+        </form>
+
+        <div>
+          <h3 style="margin-top: 0;">Timeline Entries</h3>
+          <div id="adminExpList" class="admin-list"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Floating Glass Toast Notification Stack -->
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <!-- Admin Interactive Engine -->
+  <script src="./admin.js"></script>
 </body>
 </html>

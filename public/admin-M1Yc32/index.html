@@ -5,25 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Spatial Admin CMS — Portfolio</title>
   <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#07090e" />
-  <!-- Core Design System & Dedicated Admin Styles -->
+  <meta name="theme-color" content="#2b2d35" />
+  <!-- Core Design System (for layout) & Neumorphic Admin Styles (for overrides) -->
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="./admin.css" />
 </head>
-<body>
-
-  <!-- Ambient Spatial Background Glow Orbs -->
-  <div class="ambient-bg" aria-hidden="true">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
+<body class="neumorphic-theme">
 
   <!-- 1. Authentication Gate -->
   <div id="loginGate" class="login-wrapper">
     <form id="loginForm" class="card login-card">
       <div class="login-lock-icon">🔒</div>
-      <h1 style="margin: 0 0 6px; font-size: 1.5rem;">Spatial Admin CMS</h1>
+      <h1 style="margin: 0 0 6px; font-size: 1.5rem;">Admin Studio</h1>
       <p style="color: var(--text-soft); font-size: 0.9rem; margin: 0 0 24px;">
         Enter your administrator password to unlock your portfolio studio.
       </p>
@@ -43,8 +36,8 @@
     <!-- Header -->
     <header class="admin-header card">
       <div class="admin-title-group">
-        <h1>Spatial Glass Studio</h1>
-        <p>Connected to Cloudflare D1 Database (6 Tables Active)</p>
+        <h1>Neumorphic Studio</h1>
+        <p>Connected to Cloudflare D1 Database</p>
       </div>
       <div class="admin-header-actions">
         <a href="/" target="_blank" class="btn btn-sm">View Live Site ↗</a>
@@ -82,7 +75,7 @@
 
         <div class="field">
           <label for="profTagline">Hero Tagline</label>
-          <input type="text" id="profTagline" placeholder="Crafting spatial web applications and tactile interfaces." />
+          <input type="text" id="profTagline" placeholder="Crafting web applications..." />
         </div>
 
         <div class="field">
@@ -93,11 +86,11 @@
         <!-- Avatar Upload & Dual Preview -->
         <div class="form-grid-2">
           <div class="field">
-            <label>Profile Avatar (Upload or Paste URL)</label>
+            <label>Profile Avatar</label>
             <div class="upload-dropzone" id="avatarDropzone">
               <input type="file" id="avatarFileInput" accept="image/*" />
               <div class="dropzone-title">Tap or Drop Avatar Image</div>
-              <div class="dropzone-sub">PNG, JPG, WEBP — Live Progress Upload</div>
+              <div class="dropzone-sub">Live Progress Upload</div>
             </div>
             <div class="upload-progress-wrap hidden" id="avatarProgressWrap">
               <div class="upload-progress-meta">
@@ -108,7 +101,7 @@
                 <div class="upload-progress-fill" id="avatarProgressFill"></div>
               </div>
             </div>
-            <input type="text" id="profAvatarUrl" placeholder="Or paste image URL / data URI" />
+            <input type="text" id="profAvatarUrl" placeholder="Or paste image URL" />
             <div class="dual-preview-row">
               <div class="preview-box">
                 <div class="preview-box-label">Saved in DB</div>
@@ -191,9 +184,9 @@
     <section id="tab-stories" class="admin-tab-pane hidden">
       <div class="admin-section-grid">
         <form id="storyForm" class="card">
-          <h2 style="margin-top: 0;">Publish 24h Story / Video Reel</h2>
+          <h2 style="margin-top: 0;">Publish 24h Story</h2>
           <p style="color: var(--text-soft); font-size: 0.88rem; margin-top: -8px; margin-bottom: 18px;">
-            Stories trigger the spinning Instagram gradient ring on your avatar and expire automatically after 24 hours.
+            Stories trigger the ring on your avatar and expire automatically after 24 hours.
           </p>
 
           <div class="field">
@@ -201,7 +194,6 @@
             <div class="upload-dropzone" id="storyDropzone">
               <input type="file" id="storyFileInput" accept="image/*,video/mp4,video/webm,video/quicktime" />
               <div class="dropzone-title">Drop Photo or Video Reel Here</div>
-              <div class="dropzone-sub">Supports Images (5s timer) & Videos (full duration)</div>
             </div>
             <div class="upload-progress-wrap hidden" id="storyProgressWrap">
               <div class="upload-progress-meta">
@@ -221,7 +213,7 @@
 
           <div class="field">
             <label for="storyCaption">Story Caption (Optional)</label>
-            <input type="text" id="storyCaption" placeholder="Building spatial web apps ✨" />
+            <input type="text" id="storyCaption" placeholder="Building web apps ✨" />
           </div>
 
           <button type="submit" class="btn btn-accent" style="width: 100%;">Publish to 24h Story Ring</button>
@@ -244,8 +236,8 @@
           <!-- Mark as Star Toggle Switch -->
           <div class="star-switch-row">
             <div class="star-switch-info">
-              <span class="star-switch-title">★ Mark as Popular / Starred</span>
-              <span class="star-switch-desc">Pins project to Featured Creations & Starred filter</span>
+              <span class="star-switch-title">★ Mark as Popular</span>
+              <span class="star-switch-desc">Pins project to Featured Creations</span>
             </div>
             <label class="ios-switch" aria-label="Mark project as starred">
               <input type="checkbox" id="projStarred" />
@@ -274,7 +266,6 @@
             <div class="upload-dropzone" id="projDropzone">
               <input type="file" id="projFileInput" accept="image/*" />
               <div class="dropzone-title">Tap or Drop Project Cover</div>
-              <div class="dropzone-sub">16:10 recommended aspect ratio</div>
             </div>
             <div class="upload-progress-wrap hidden" id="projProgressWrap">
               <div class="upload-progress-meta">
@@ -310,7 +301,7 @@
           </div>
 
           <div class="field">
-            <label for="projSortOrder">Sort Order (Lower numbers appear first)</label>
+            <label for="projSortOrder">Sort Order</label>
             <input type="number" id="projSortOrder" value="0" />
           </div>
 
@@ -385,12 +376,12 @@
 
           <div class="field">
             <label for="expRole">Role / Degree Title</label>
-            <input type="text" id="expRole" placeholder="Electrical Engineering Undergraduate" required />
+            <input type="text" id="expRole" placeholder="Developer" required />
           </div>
 
           <div class="field">
             <label for="expOrg">Organization / University</label>
-            <input type="text" id="expOrg" placeholder="Techno India University" required />
+            <input type="text" id="expOrg" placeholder="University Name" required />
           </div>
 
           <div class="form-grid-2">
@@ -399,14 +390,14 @@
               <input type="text" id="expStartDate" placeholder="July 2026" />
             </div>
             <div class="field">
-              <label for="expEndDate">End Date (Leave blank for Present)</label>
+              <label for="expEndDate">End Date</label>
               <input type="text" id="expEndDate" placeholder="Present" />
             </div>
           </div>
 
           <div class="field">
             <label for="expDesc">Description / Highlights</label>
-            <textarea id="expDesc" rows="3" placeholder="Key responsibilities or coursework..."></textarea>
+            <textarea id="expDesc" rows="3" placeholder="Key responsibilities..."></textarea>
           </div>
 
           <div class="field">
@@ -432,7 +423,6 @@
   <!-- Floating Glass Toast Notification Stack -->
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
-  <!-- Admin Interactive Engine -->
   <script src="./admin.js"></script>
 </body>
 </html>

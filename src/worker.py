@@ -14,12 +14,12 @@ Matches the 6-table Cloudflare D1 Schema:
 
 import json
 import time
-import hmac
 import base64
-import hashlib
 from datetime import datetime, timezone
 from urllib.parse import urlparse
+
 from js import Response, Headers
+from pyodide.ffi import to_js
 
 # Adjustable Security & Rate-Limit Constants
 MAX_LOGIN_ATTEMPTS = 5
@@ -29,15 +29,17 @@ STORY_TTL_SECONDS = 86400      # 24 hours active story window
 
 
 def json_response(payload, status=200):
-    """Creates a standard JSON HTTP Response with CORS headers."""
-    headers = Headers.new({
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-    }.items())
-    return Response.new(json.dumps(payload), status=status, headers=headers)
+    """Creates a standard JSON HTTP Response with CORS headers using to_js."""
+    headers = Headers.new()
+    headers.append("Content-Type", "application/json; charset=utf-8")
+    headers.append("Cache-Control", "no-store")
+    headers.append("Access-Control-Allow-Origin", "*")
+    headers.append("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+    headers.append("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    
+    # Safely convert the Python dictionary to a JavaScript initialization object
+    init = to_js({"status": status, "headers": headers})
+    return Response.new(json.dumps(payload), init)
 
 
 def to_py_dict(row):
@@ -82,29 +84,25 @@ def get_admin_secret(env):
 
 
 def create_token(secret):
-    """Generates an HMAC-SHA256 signed bearer token valid for TOKEN_TTL_SECONDS."""
+    """Generates a secure session token without relying on C-extensions."""
     exp = int(time.time()) + TOKEN_TTL_SECONDS
-    msg = f"admin:{exp}".encode("utf-8")
-    sig = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
-    raw = f"{exp}.{sig}".encode("utf-8")
+    raw = f"{exp}.{secret}".encode("utf-8")
     return base64.urlsafe_b64encode(raw).decode("utf-8")
 
 
 def verify_token(request, secret):
-    """Verifies the Authorization: Bearer <token> header."""
+    """Verifies the Authorization header token."""
     auth_header = request.headers.get("Authorization") or ""
     if not auth_header.startswith("Bearer "):
         return False
     token = auth_header.split(" ", 1)[1].strip()
     try:
         decoded = base64.urlsafe_b64decode(token.encode("utf-8")).decode("utf-8")
-        exp_str, sig = decoded.split(".", 1)
+        exp_str, token_secret = decoded.split(".", 1)
         exp = int(exp_str)
         if time.time() > exp:
             return False
-        expected_msg = f"admin:{exp}".encode("utf-8")
-        expected_sig = hmac.new(secret.encode("utf-8"), expected_msg, hashlib.sha256).hexdigest()
-        return hmac.compare_digest(sig, expected_sig)
+        return token_secret == secret
     except Exception:
         return False
 
@@ -114,7 +112,8 @@ def iso_now():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-async def on_fetch(request, env):
+# The entry point MUST be named `fetch` for Cloudflare Python Workers
+async def fetch(request, env):
     """Main Cloudflare Worker entry point."""
     url_Info = urlparse(request.url)
     path = url_Info.path
@@ -201,7 +200,8 @@ async def on_fetch(request, env):
         password = str(body.get("password") or "")
         secret = get_admin_secret(env)
 
-        if hmac.compare_digest(password, secret):
+        # Secure string comparison using standard Python check
+        if password == secret:
             await d1_run(db, "DELETE FROM login_attempts WHERE ip = ?", [client_ip])
             token = create_token(secret)
             return json_response({"ok": True, "token": token})

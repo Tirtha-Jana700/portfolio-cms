@@ -1,7 +1,6 @@
 name = "portfolio-cms"
-main = "src/worker.py"
+main = "src/worker.js"
 compatibility_date = "2026-10-25"
-compatibility_flags = ["python_workers"]
 
 [[d1_databases]]
 binding = "DB"
@@ -15,4 +14,3 @@ bucket_name = "portfolio-media"
 [assets]
 directory = "./public"
 binding = "ASSETS"
-

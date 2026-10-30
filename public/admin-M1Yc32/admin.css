@@ -1,13 +1,100 @@
 /* ==========================================================================
-   Spatial Admin CMS Dedicated Stylesheet (admin.css)
+   Neumorphic Admin CMS Stylesheet (admin.css)
+   Preserves original --ease-bounce animations mapped to physical layers
    ========================================================================== */
 
-.admin-shell {
-  padding: 28px 0 80px;
+.neumorphic-theme {
+  /* Neumorphic Palette Variables */
+  --bg: #2b2d35;
+  --shadow-light: #363943;
+  --shadow-dark: #202127;
+  
+  --accent: #3b82f6;
+  --accent-glow: #60a5fa;
+  --danger: #ef4444;
+
+  --text: #e2e8f0;
+  --text-soft: #94a3b8;
+  --text-faint: #64748b;
+
+  /* Neumorphic Shadow Physics */
+  --neu-out: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  --neu-out-sm: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  --neu-in: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
+  --neu-in-sm: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+
+  background-color: var(--bg);
+  color: var(--text);
   min-height: 100vh;
 }
 
-/* Authentication Login Gate */
+.admin-shell {
+  padding: 28px 0 80px;
+}
+
+/* --------------------------------------------------------------------------
+   Overrides for Global UI Components (Cards, Buttons, Inputs)
+   -------------------------------------------------------------------------- */
+
+.neumorphic-theme .card {
+  background: var(--bg);
+  box-shadow: var(--neu-out);
+  border: none; /* Removes Glassmorphic borders */
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  backdrop-filter: none; 
+  -webkit-backdrop-filter: none;
+}
+
+.neumorphic-theme .btn {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--neu-out-sm);
+  border: none;
+  font-weight: 600;
+  transition: transform 0.35s var(--ease-bounce), box-shadow 0.35s ease, color 0.35s ease;
+}
+
+.neumorphic-theme .btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  color: var(--accent-glow);
+}
+
+.neumorphic-theme .btn:active {
+  transform: scale(0.95);
+  box-shadow: var(--neu-in-sm);
+}
+
+.neumorphic-theme .btn-accent {
+  color: var(--accent);
+}
+
+.neumorphic-theme .btn-danger {
+  color: var(--danger);
+}
+
+.neumorphic-theme input, 
+.neumorphic-theme textarea, 
+.neumorphic-theme select {
+  background: var(--bg);
+  box-shadow: var(--neu-in);
+  border: none;
+  color: var(--text);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  transition: box-shadow 0.3s ease;
+}
+
+.neumorphic-theme input:focus, 
+.neumorphic-theme textarea:focus, 
+.neumorphic-theme select:focus {
+  outline: none;
+  box-shadow: var(--neu-in), 0 0 0 2px var(--shadow-dark) inset; /* Deeper press on focus */
+}
+
+/* --------------------------------------------------------------------------
+   Authentication Gate
+   -------------------------------------------------------------------------- */
 .login-wrapper {
   min-height: 85vh;
   display: flex;
@@ -28,16 +115,17 @@
   height: 64px;
   margin: 0 auto 18px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.2), rgba(191, 90, 242, 0.2));
-  border: 1px solid var(--glass-highlight);
+  background: var(--bg);
+  box-shadow: var(--neu-out);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.6rem;
-  box-shadow: 0 12px 28px rgba(10, 132, 255, 0.25);
 }
 
-/* Top Admin Header */
+/* --------------------------------------------------------------------------
+   Header & Tabs
+   -------------------------------------------------------------------------- */
 .admin-header {
   display: flex;
   align-items: center;
@@ -47,26 +135,10 @@
   margin-bottom: 24px;
 }
 
-.admin-title-group h1 {
-  font-size: 1.65rem;
-  font-weight: 800;
-  margin: 0;
-  letter-spacing: -0.02em;
-}
+.admin-title-group h1 { font-size: 1.65rem; margin: 0; }
+.admin-title-group p { margin: 2px 0 0; color: var(--text-soft); font-size: 0.88rem; }
+.admin-header-actions { display: flex; gap: 10px; align-items: center; }
 
-.admin-title-group p {
-  margin: 2px 0 0;
-  color: var(--text-soft);
-  font-size: 0.88rem;
-}
-
-.admin-header-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-/* Sliding Bouncy Pill Tab Bar */
 .admin-tabs-wrap {
   display: flex;
   justify-content: center;
@@ -78,27 +150,23 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(12, 16, 26, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  padding: 6px;
+  background: var(--bg);
+  box-shadow: var(--neu-in);
+  padding: 8px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow-sm);
   overflow-x: auto;
   max-width: 100%;
   scrollbar-width: none;
 }
 
-.admin-tabs::-webkit-scrollbar {
-  display: none;
-}
+.admin-tabs::-webkit-scrollbar { display: none; }
 
+/* The sliding indicator transforms from a flat background into a raised pill */
 .admin-tab-indicator {
   position: absolute;
   border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
   transition:
     left 0.45s var(--ease-bounce),
     top 0.45s var(--ease-bounce),
@@ -115,8 +183,6 @@
   background: transparent;
   border: none;
   color: var(--text-soft);
-  font-family: inherit;
-  font-size: 0.88rem;
   font-weight: 700;
   padding: 10px 20px;
   border-radius: var(--radius-pill);
@@ -125,19 +191,13 @@
   transition: color 0.25s ease, transform 0.35s var(--ease-bounce);
 }
 
-.admin-tab-btn:hover {
-  color: var(--text);
-}
+.admin-tab-btn:hover { color: var(--text); }
+.admin-tab-btn.active { color: var(--accent); }
+.admin-tab-btn:active { transform: scale(0.9); }
 
-.admin-tab-btn.active {
-  color: #ffffff;
-}
-
-.admin-tab-btn:active {
-  transform: scale(0.9);
-}
-
-/* Form Layouts */
+/* --------------------------------------------------------------------------
+   Forms, File Drops & Toggles
+   -------------------------------------------------------------------------- */
 .form-grid-2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -152,208 +212,122 @@
 }
 
 @media (max-width: 860px) {
-  .admin-section-grid {
-    grid-template-columns: 1fr;
-  }
+  .admin-section-grid { grid-template-columns: 1fr; }
 }
 
-/* Custom Glassmorphic File Upload Dropzone */
+/* Neumorphic Dropzone: Softly depressed natively, deeply depressed on hover */
 .upload-dropzone {
-  border: 1.5px dashed rgba(255, 255, 255, 0.22);
   border-radius: var(--radius-md);
-  background: rgba(12, 16, 26, 0.55);
+  background: var(--bg);
+  box-shadow: var(--neu-in-sm);
   padding: 18px;
   text-align: center;
   cursor: pointer;
-  transition:
-    border-color 0.25s ease,
-    background 0.25s ease,
-    transform 0.35s var(--ease-bounce);
+  transition: box-shadow 0.35s var(--ease-bounce), transform 0.35s var(--ease-bounce);
   margin-bottom: 12px;
 }
 
 .upload-dropzone:hover,
 .upload-dropzone.dragover {
-  border-color: var(--accent);
-  background: rgba(10, 132, 255, 0.1);
-  transform: scale(1.01);
+  box-shadow: var(--neu-in);
+  transform: scale(0.98);
 }
 
-.upload-dropzone input[type="file"] {
-  display: none;
-}
+.upload-dropzone input[type="file"] { display: none; }
+.dropzone-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+.dropzone-sub { font-size: 0.78rem; color: var(--text-faint); }
 
-.dropzone-title {
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-
-.dropzone-sub {
-  font-size: 0.78rem;
-  color: var(--text-faint);
-}
-
-/* Live XHR Upload Progress Bar */
-.upload-progress-wrap {
-  margin: 10px 0 14px;
-}
-
-.upload-progress-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 5px;
-}
+.upload-progress-wrap { margin: 10px 0 14px; }
+.upload-progress-meta { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: var(--accent); margin-bottom: 5px; }
 
 .upload-progress-track {
   height: 8px;
   border-radius: var(--radius-pill);
-  background: var(--surface-pressed);
-  box-shadow: var(--glass-inset);
+  background: var(--bg);
+  box-shadow: var(--neu-in-sm);
   overflow: hidden;
 }
 
 .upload-progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
   border-radius: var(--radius-pill);
   transition: width 0.15s linear;
 }
 
-/* Dual Media Previews (Saved vs Current) */
-.dual-preview-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 10px;
-}
+.dual-preview-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
 
 .preview-box {
-  background: var(--surface-pressed);
-  border: 1px solid var(--glass-border);
+  background: var(--bg);
+  box-shadow: var(--neu-in-sm);
   border-radius: var(--radius-sm);
   padding: 10px;
   text-align: center;
 }
 
-.preview-box-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-faint);
-  margin-bottom: 8px;
-}
+.preview-box-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 8px; }
+.preview-media-frame { height: 110px; border-radius: 10px; overflow: hidden; background: var(--shadow-dark); display: flex; align-items: center; justify-content: center; color: var(--text-faint); font-size: 0.78rem; }
+.preview-media-frame img, .preview-media-frame video { width: 100%; height: 100%; object-fit: cover; }
 
-.preview-media-frame {
-  height: 110px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-faint);
-  font-size: 0.78rem;
-}
-
-.preview-media-frame img,
-.preview-media-frame video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Custom Apple-Style Star Toggle Switch */
+/* Neumorphic Star Switch Toggle */
 .star-switch-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
   border-radius: var(--radius-md);
-  background: rgba(255, 214, 10, 0.07);
-  border: 1px solid rgba(255, 214, 10, 0.25);
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
   margin-bottom: 18px;
 }
 
-.star-switch-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+.star-switch-info { display: flex; flex-direction: column; gap: 2px; }
+.star-switch-title { font-weight: 700; font-size: 0.94rem; color: #fbbf24; }
+.star-switch-desc { font-size: 0.78rem; color: var(--text-soft); }
 
-.star-switch-title {
-  font-weight: 700;
-  font-size: 0.94rem;
-  color: var(--star-gold);
-}
-
-.star-switch-desc {
-  font-size: 0.78rem;
-  color: var(--text-soft);
-}
-
-.ios-switch {
-  position: relative;
-  width: 54px;
-  height: 30px;
-  display: inline-block;
-}
-
-.ios-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+.ios-switch { position: relative; width: 54px; height: 30px; display: inline-block; }
+.ios-switch input { opacity: 0; width: 0; height: 0; }
 
 .ios-slider {
   position: absolute;
   inset: 0;
   cursor: pointer;
-  background: var(--surface-pressed);
-  border: 1px solid var(--glass-border);
+  background: var(--bg);
+  box-shadow: var(--neu-in);
   border-radius: var(--radius-pill);
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: background 0.3s ease;
 }
 
+/* Raised Switch Knob */
 .ios-slider::before {
   content: "★";
   position: absolute;
   height: 22px;
   width: 22px;
-  left: 3px;
-  bottom: 3px;
-  background: #ffffff;
-  color: #111;
+  left: 4px;
+  bottom: 4px;
+  background: var(--bg);
+  box-shadow: 2px 2px 4px var(--shadow-dark), -2px -2px 4px var(--shadow-light);
+  color: var(--text-soft);
   font-size: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: transform 0.38s var(--ease-bounce);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-}
-
-.ios-switch input:checked + .ios-slider {
-  background: linear-gradient(135deg, #ffd60a, #ff9f0a);
-  border-color: rgba(255, 255, 255, 0.4);
+  transition: transform 0.38s var(--ease-bounce), color 0.3s ease;
 }
 
 .ios-switch input:checked + .ios-slider::before {
   transform: translateX(24px);
+  color: #fbbf24;
 }
 
-/* Admin Item List Cards */
-.admin-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+/* --------------------------------------------------------------------------
+   Lists & Toasts
+   -------------------------------------------------------------------------- */
+.admin-list { display: flex; flex-direction: column; gap: 14px; }
 
 .admin-item-card {
   padding: 18px 20px;
@@ -362,53 +336,18 @@
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
+  background: var(--bg);
+  box-shadow: var(--neu-out-sm);
+  border-radius: var(--radius-md);
 }
 
-.admin-item-info {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex: 1;
-  min-width: 200px;
-}
+.admin-item-info { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 200px; }
+.admin-item-thumb { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; background: var(--bg); box-shadow: var(--neu-in-sm); flex-shrink: 0; }
+.admin-item-title { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-item-sub { color: var(--text-soft); font-size: 0.82rem; margin-top: 2px; }
+.admin-item-actions { display: flex; gap: 8px; align-items: center; }
+.btn-sm { padding: 8px 14px; font-size: 0.8rem; }
 
-.admin-item-thumb {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  object-fit: cover;
-  background: var(--surface-pressed);
-  border: 1px solid var(--glass-border);
-  flex-shrink: 0;
-}
-
-.admin-item-title {
-  font-weight: 700;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.admin-item-sub {
-  color: var(--text-soft);
-  font-size: 0.82rem;
-  margin-top: 2px;
-}
-
-.admin-item-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.btn-sm {
-  padding: 8px 14px;
-  font-size: 0.8rem;
-}
-
-/* Floating Glass Toast Notification Stack */
 .toast-stack {
   position: fixed;
   bottom: 24px;
@@ -427,24 +366,16 @@
   gap: 10px;
   padding: 14px 20px;
   border-radius: var(--radius-pill);
-  background: rgba(18, 24, 38, 0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--glass-highlight);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
-  color: #fff;
+  background: var(--bg);
+  box-shadow: var(--neu-out);
+  color: var(--text);
   font-size: 0.88rem;
   font-weight: 600;
   animation: toastPopIn 0.45s var(--ease-bounce) forwards;
 }
 
-.toast.toast-success {
-  border-color: rgba(48, 209, 88, 0.5);
-}
-
-.toast.toast-error {
-  border-color: rgba(255, 69, 58, 0.55);
-}
+.toast.toast-success { color: var(--accent); }
+.toast.toast-error { color: var(--danger); }
 
 @keyframes toastPopIn {
   0% { opacity: 0; transform: translateY(24px) scale(0.88); }

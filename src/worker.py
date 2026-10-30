@@ -19,7 +19,6 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from js import Response, Headers
-from pyodide.ffi import to_js
 
 # Adjustable Security & Rate-Limit Constants
 MAX_LOGIN_ATTEMPTS = 5
@@ -29,17 +28,17 @@ STORY_TTL_SECONDS = 86400      # 24 hours active story window
 
 
 def json_response(payload, status=200):
-    """Creates a standard JSON HTTP Response with CORS headers using to_js."""
-    headers = Headers.new()
-    headers.append("Content-Type", "application/json; charset=utf-8")
-    headers.append("Cache-Control", "no-store")
-    headers.append("Access-Control-Allow-Origin", "*")
-    headers.append("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-    headers.append("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    """Creates a standard JSON HTTP Response with CORS headers."""
+    headers = Headers.new({
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+    }.items())
     
-    # Safely convert the Python dictionary to a JavaScript initialization object
-    init = to_js({"status": status, "headers": headers})
-    return Response.new(json.dumps(payload), init)
+    # Pyodide automatically translates keyword arguments into a JS object for the init parameter
+    return Response.new(json.dumps(payload), status=status, headers=headers)
 
 
 def to_py_dict(row):
@@ -84,7 +83,7 @@ def get_admin_secret(env):
 
 
 def create_token(secret):
-    """Generates a secure session token without relying on C-extensions."""
+    """Generates a secure session token using Base64 encoding without C-extensions."""
     exp = int(time.time()) + TOKEN_TTL_SECONDS
     raw = f"{exp}.{secret}".encode("utf-8")
     return base64.urlsafe_b64encode(raw).decode("utf-8")
@@ -112,8 +111,8 @@ def iso_now():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-# The entry point MUST be named `fetch` for Cloudflare Python Workers
-async def fetch(request, env):
+# Cloudflare Python Workers require the main handler to be named exactly on_fetch
+async def on_fetch(request, env):
     """Main Cloudflare Worker entry point."""
     url_Info = urlparse(request.url)
     path = url_Info.path
@@ -200,7 +199,6 @@ async def fetch(request, env):
         password = str(body.get("password") or "")
         secret = get_admin_secret(env)
 
-        # Secure string comparison using standard Python check
         if password == secret:
             await d1_run(db, "DELETE FROM login_attempts WHERE ip = ?", [client_ip])
             token = create_token(secret)
@@ -246,7 +244,6 @@ async def fetch(request, env):
             data_url = f"data:{content_type};base64,{b64_data}"
             return json_response({"ok": True, "url": data_url})
 
-        # Parse JSON body for CRUD operations
         body = {}
         if method in ("POST", "PUT"):
             raw_text = await request.text()

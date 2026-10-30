@@ -5,39 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Portfolio</title>
   <meta name="description" content="Personal portfolio — projects, skills, and experience." />
-  <meta name="theme-color" content="#2b2d35" />
+  <meta name="theme-color" content="#2b2d35" id="metaThemeColor" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="pre-reveal">
 
-  <!-- Apple Spatial Intro Screen (Updated for Neumorphism) -->
-  <div id="introScreen">
-    <div class="intro-card card">
-      <div class="intro-ring-wrap">
-        <svg class="intro-ring" viewBox="0 0 120 120">
-          <defs>
-            <linearGradient id="introGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#3b82f6" />
-              <stop offset="100%" stop-color="#60a5fa" />
-            </linearGradient>
-          </defs>
-          <circle class="intro-ring-track" cx="60" cy="60" r="54" />
-          <circle class="intro-ring-progress" cx="60" cy="60" r="54" stroke="url(#introGrad)" />
-        </svg>
-        <div class="intro-avatar">
-          <img id="introAvatarImg" src="" alt="" style="display:none" />
-        </div>
-      </div>
-      <div class="intro-name" id="introName">Loading...</div>
-      <div class="intro-title" id="introTitle"></div>
-      <div class="intro-badge">Neumorphic Studio</div>
+  <!-- Typography Fly-Through Intro -->
+  <div id="introScreen" class="intro-overlay">
+    <div class="intro-typography-wrap">
+      <div id="introDynamicText" class="intro-typography"></div>
+      <div class="intro-sub-badge" id="introSubBadge">Neumorphic Studio</div>
     </div>
   </div>
 
   <!-- Main Application Shell -->
   <div id="mainContent">
 
-    <!-- Dynamic Island Bouncy Navbar -->
+    <!-- Dynamic Island Navbar with Theme Toggle -->
     <nav class="nav">
       <div class="container nav-inner">
         <a href="#top" class="nav-brand" id="navBrand">
@@ -50,12 +34,15 @@
           <a href="#skills" class="nav-link">Skills</a>
           <a href="#projects" class="nav-link">Projects</a>
           <a href="#experience" class="nav-link">Experience</a>
-          <a href="#contact" class="nav-link">Contact</a>
+          <!-- Theme Toggle Button -->
+          <button type="button" class="nav-link theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Theme">
+            <span id="themeIcon">☀️</span>
+          </button>
         </div>
       </div>
     </nav>
 
-    <!-- Hero Section with Instagram 24h Story Ring -->
+    <!-- Hero Section -->
     <header id="top" class="hero container scroll-anim">
       <div class="pfp-story-wrapper" id="avatarFrame" title="Tap to view 24h Story">
         <div class="story-ring-gradient" id="storyRing"></div>
@@ -104,29 +91,23 @@
         <div class="section-header">
           <span class="section-eyebrow">Toolkit</span>
           <h2 class="section-title">Skills & Proficiency</h2>
-          <p class="section-subtitle">Technologies and tools I build with day to day.</p>
         </div>
         <div class="skills-grid" id="skillsGrid"></div>
       </div>
     </section>
 
-    <!-- Projects Section with Filter & Controls -->
+    <!-- Projects Section -->
     <section id="projects" class="hidden scroll-anim">
       <div class="container">
         <div class="section-header">
           <span class="section-eyebrow">Selected Work</span>
           <h2 class="section-title">Projects</h2>
-          <p class="section-subtitle">Explore all builds, filter by starred status, or auto-scroll the showcase.</p>
         </div>
 
-        <!-- Neumorphic Control Toolbar -->
         <div class="projects-toolbar card">
           <div class="filter-group" id="projectFilters" role="tablist">
             <button type="button" class="filter-btn active" data-filter="all">All Projects</button>
-            <button type="button" class="filter-btn" data-filter="starred">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              Starred
-            </button>
+            <button type="button" class="filter-btn" data-filter="starred">★ Starred</button>
             <button type="button" class="filter-btn" data-filter="unstarred">Standard</button>
           </div>
 
@@ -188,7 +169,7 @@
     </footer>
   </div>
 
-  <!-- Instagram-Style 24h Story & Video Reels Modal -->
+  <!-- 24h Story Modal -->
   <div class="story-modal hidden" id="storyModal" role="dialog" aria-modal="true">
     <div class="story-modal-backdrop" id="storyBackdrop"></div>
     <div class="story-player-card card">
@@ -208,14 +189,12 @@
           <button type="button" class="story-ctrl-btn" id="storyCloseBtn">✕</button>
         </div>
       </div>
-
       <div class="story-media-stage" id="storyMediaStage">
         <div class="story-tap-zone story-tap-prev" id="storyPrevZone"></div>
         <div class="story-tap-zone story-tap-next" id="storyNextZone"></div>
         <img id="storyImgEl" class="story-media-el hidden" src="" alt="Story" />
         <video id="storyVideoEl" class="story-media-el hidden" playsinline></video>
       </div>
-
       <div class="story-caption-bar hidden" id="storyCaptionBar">
         <p id="storyCaptionText"></p>
       </div>

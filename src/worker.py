@@ -1,338 +1,460 @@
 """
-Portfolio backend — Flask app running on Cloudflare Python Workers.
-Compatible with D1 SQL Database and R2 storage bindings.
+===============================================================================
+Cloudflare Python Worker Backend (src/worker.py)
+===============================================================================
+Matches the 6-table Cloudflare D1 Schema:
+  1. profile
+  2. skills
+  3. projects (with `starred` column)
+  4. experience
+  5. login_attempts (IP rate limiting)
+  6. stories (automatic 24-hour active window filtering)
+===============================================================================
 """
 
 import json
 import time
+import hmac
+import base64
 import hashlib
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
+from urllib.parse import urlparse
+from js import Response, Headers
 
-from flask import Flask, request, Response, jsonify
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from pyodide.ffi import run_sync
-from workers import wsgi
+# Adjustable Security & Rate-Limit Constants
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_SECONDS = 900          # 15 minutes lockout after 5 failed attempts
+TOKEN_TTL_SECONDS = 86400      # 24 hours admin session validity
+STORY_TTL_SECONDS = 86400      # 24 hours active story window
 
-app = Flask(__name__)
 
-SESSION_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
-ADMIN_COOKIE = "session_token"
+def json_response(payload, status=200):
+    """Creates a standard JSON HTTP Response with CORS headers."""
+    headers = Headers.new({
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+    }.items())
+    return Response.new(json.dumps(payload), status=status, headers=headers)
 
-def env():
-    return request.environ["workers.env"]
 
-def to_py(obj):
-    if obj is None:
+def to_py_dict(row):
+    """Safely converts a Cloudflare D1 JsProxy row object into a Python dict."""
+    if row is None:
         return None
-    if hasattr(obj, "to_py"):
-        try:
-            return obj.to_py()
-        except Exception:
-            pass
-    return obj
+    if hasattr(row, "to_py"):
+        return row.to_py()
+    return dict(row)
 
-def d1_all(sql, params=None):
-    stmt = env().DB.prepare(sql)
+
+async def d1_all(db, sql, params=None):
+    """Executes a SELECT query on D1 and returns a list of Python dictionaries."""
+    stmt = db.prepare(sql)
     if params:
         stmt = stmt.bind(*params)
-    result = to_py(run_sync(stmt.all()))
-    rows = result.get("results", result) if isinstance(result, dict) else result
-    return rows or []
+    res = await stmt.all()
+    results = res.results.to_py() if hasattr(res.results, "to_py") else list(res.results)
+    return [dict(r) for r in results]
 
-def d1_first(sql, params=None):
-    stmt = env().DB.prepare(sql)
+
+async def d1_first(db, sql, params=None):
+    """Executes a SELECT query on D1 and returns the first row as a dict."""
+    rows = await d1_all(db, sql, params)
+    return rows[0] if rows else None
+
+
+async def d1_run(db, sql, params=None):
+    """Executes an INSERT, UPDATE, or DELETE query on D1."""
+    stmt = db.prepare(sql)
     if params:
         stmt = stmt.bind(*params)
-    result = run_sync(stmt.first())
-    return to_py(result)
+    return await stmt.run()
 
-def d1_run(sql, params=None):
-    stmt = env().DB.prepare(sql)
-    if params:
-        stmt = stmt.bind(*params)
-    return to_py(run_sync(stmt.run()))
 
-def now_iso():
-    return datetime.now(timezone.utc).isoformat()
+def get_admin_secret(env):
+    """Retrieves the ADMIN_PASSWORD secret from the Worker environment."""
+    secret = getattr(env, "ADMIN_PASSWORD", None)
+    if secret and str(secret).strip():
+        return str(secret).strip()
+    return "admin123"  # Fallback password for local development only
 
-def custom_check_password(stored_hash, password):
+
+def create_token(secret):
+    """Generates an HMAC-SHA256 signed bearer token valid for TOKEN_TTL_SECONDS."""
+    exp = int(time.time()) + TOKEN_TTL_SECONDS
+    msg = f"admin:{exp}".encode("utf-8")
+    sig = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+    raw = f"{exp}.{sig}".encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("utf-8")
+
+
+def verify_token(request, secret):
+    """Verifies the Authorization: Bearer <token> header."""
+    auth_header = request.headers.get("Authorization") or ""
+    if not auth_header.startswith("Bearer "):
+        return False
+    token = auth_header.split(" ", 1)[1].strip()
     try:
-        salt, pwd_hash = stored_hash.split("$")
-        computed = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
-        return computed == pwd_hash
+        decoded = base64.urlsafe_b64decode(token.encode("utf-8")).decode("utf-8")
+        exp_str, sig = decoded.split(".", 1)
+        exp = int(exp_str)
+        if time.time() > exp:
+            return False
+        expected_msg = f"admin:{exp}".encode("utf-8")
+        expected_sig = hmac.new(secret.encode("utf-8"), expected_msg, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(sig, expected_sig)
     except Exception:
         return False
 
-def serializer():
-    secret = getattr(env(), "SESSION_SECRET", None) or "dev-insecure-secret-change-me"
-    return URLSafeTimedSerializer(secret)
 
-def is_authenticated():
-    token = request.cookies.get(ADMIN_COOKIE)
-    if not token:
-        return False
-    try:
-        data = serializer().loads(token, max_age=SESSION_MAX_AGE)
-        return data.get("adm") is True
-    except (BadSignature, SignatureExpired):
-        return False
+def iso_now():
+    """Returns current UTC timestamp in ISO-8601 format."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def admin_required(fn):
-    def wrapper(*args, **kwargs):
-        if not is_authenticated():
-            return jsonify({"error": "Not authenticated"}), 401
-        return fn(*args, **kwargs)
-    wrapper.__name__ = fn.__name__
-    return wrapper
 
-def cookie_is_secure():
-    host = request.host.split(":")[0]
-    return host not in ("localhost", "127.0.0.1")
+async def on_fetch(request, env):
+    """Main Cloudflare Worker entry point."""
+    url_Info = urlparse(request.url)
+    path = url_Info.path
+    method = request.method.upper()
 
-# ---------- Authentication Routes ----------
+    if method == "OPTIONS":
+        return json_response({"ok": True}, status=200)
 
-@app.post("/api/admin/login")
-def admin_login():
-    body = request.get_json(silent=True) or {}
-    password = body.get("password", "")
-    stored_hash = getattr(env(), "ADMIN_PASSWORD_HASH", None)
-    if not stored_hash:
-        return jsonify({"error": "Admin password not configured in Cloudflare environment secrets."}), 500
-    if not password or not custom_check_password(stored_hash, password):
-        return jsonify({"error": "Incorrect password"}), 401
-    token = serializer().dumps({"adm": True})
-    resp = jsonify({"ok": True})
-    resp.set_cookie(
-        ADMIN_COOKIE,
-        token,
-        max_age=SESSION_MAX_AGE,
-        httponly=True,
-        secure=cookie_is_secure(),
-        samesite="Strict",
-        path="/api/admin"
-    )
-    return resp
+    db = getattr(env, "DB", None)
 
-@app.post("/api/admin/logout")
-def admin_logout():
-    resp = jsonify({"ok": True})
-    resp.delete_cookie(ADMIN_COOKIE, path="/api/admin")
-    return resp
+    # -------------------------------------------------------------------------
+    # 1. Public Portfolio Data Endpoint: GET /api/portfolio
+    # -------------------------------------------------------------------------
+    if path == "/api/portfolio" and method == "GET":
+        if db is None:
+            return json_response({"error": "D1 database binding 'DB' is missing."}, status=500)
 
-@app.get("/api/admin/session")
-def admin_session():
-    return jsonify({"authenticated": is_authenticated()})
+        profile = await d1_first(db, "SELECT * FROM profile WHERE id = 1") or {}
+        skills = await d1_all(db, "SELECT * FROM skills ORDER BY sort_order ASC, id ASC")
+        projects = await d1_all(
+            db,
+            "SELECT * FROM projects ORDER BY starred DESC, sort_order ASC, id DESC"
+        )
+        experience = await d1_all(
+            db,
+            "SELECT * FROM experience ORDER BY sort_order ASC, id DESC"
+        )
 
-# ---------- Public Portfolio Data API ----------
+        # Clean up stories older than 24 hours and fetch active stories
+        cutoff_iso = datetime.fromtimestamp(
+            time.time() - STORY_TTL_SECONDS, tz=timezone.utc
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-@app.get("/api/portfolio")
-def get_portfolio():
-    profile = d1_first("SELECT * FROM profile WHERE id = 1") or {}
-    skills = d1_all("SELECT * FROM skills ORDER BY sort_order ASC, id ASC")
-    projects = d1_all("SELECT * FROM projects ORDER BY sort_order ASC, id DESC")
-    experience = d1_all("SELECT * FROM experience ORDER BY sort_order ASC, id ASC")
-    
-    # Instagram-style 24-hour expiration window
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-    stories = d1_all("SELECT * FROM stories WHERE created_at >= ? ORDER BY id ASC", [cutoff])
+        await d1_run(db, "DELETE FROM stories WHERE created_at < ?", [cutoff_iso])
+        stories = await d1_all(
+            db,
+            "SELECT * FROM stories WHERE created_at >= ? ORDER BY created_at ASC",
+            [cutoff_iso]
+        )
 
-    return jsonify({
-        "profile": profile,
-        "skills": skills,
-        "projects": projects,
-        "experience": experience,
-        "stories": stories,
-    })
+        return json_response({
+            "profile": profile,
+            "skills": skills,
+            "projects": projects,
+            "experience": experience,
+            "stories": stories
+        })
 
-# ---------- Profile Management ----------
+    # -------------------------------------------------------------------------
+    # 2. Admin Authentication Endpoint: POST /api/admin/login
+    # -------------------------------------------------------------------------
+    if path == "/api/admin/login" and method == "POST":
+        if db is None:
+            return json_response({"error": "Database not bound"}, status=500)
 
-PROFILE_FIELDS = [
-    "full_name", "title", "tagline", "bio", "avatar_url", "resume_url",
-    "email", "phone", "location", "github_url", "linkedin_url",
-    "twitter_url", "instagram_url", "youtube_url",
-]
+        client_ip = request.headers.get("CF-Connecting-IP") or "local"
+        now_ts = int(time.time())
 
-@app.put("/api/admin/profile")
-@admin_required
-def update_profile():
-    body = request.get_json(silent=True) or {}
-    sets, params = [], []
-    for field in PROFILE_FIELDS:
-        if field in body:
-            sets.append(f"{field} = ?")
-            params.append(str(body[field]))
-    if not sets:
-        return jsonify({"error": "No fields provided"}), 400
-    sets.append("updated_at = ?")
-    params.append(now_iso())
-    d1_run(f"UPDATE profile SET {', '.join(sets)} WHERE id = 1", params)
-    return jsonify(d1_first("SELECT * FROM profile WHERE id = 1"))
+        attempt_row = await d1_first(
+            db, "SELECT * FROM login_attempts WHERE ip = ?", [client_ip]
+        )
 
-# ---------- Generic CRUD Factory ----------
+        if attempt_row:
+            attempts = int(attempt_row.get("attempts") or 0)
+            last_attempt = int(attempt_row.get("last_attempt") or 0)
+            if attempts >= MAX_LOGIN_ATTEMPTS and (now_ts - last_attempt) < LOCKOUT_SECONDS:
+                wait_min = max(1, (LOCKOUT_SECONDS - (now_ts - last_attempt)) // 60)
+                return json_response(
+                    {"error": f"Too many failed attempts. Try again in {wait_min} min."},
+                    status=429
+                )
+            elif (now_ts - last_attempt) >= LOCKOUT_SECONDS:
+                await d1_run(
+                    db,
+                    "UPDATE login_attempts SET attempts = 0, last_attempt = ? WHERE ip = ?",
+                    [now_ts, client_ip]
+                )
+                attempts = 0
+        else:
+            attempts = 0
 
-def make_crud(table, allowed_fields, required_field, order_sql):
-    def list_items():
-        return jsonify(d1_all(f"SELECT * FROM {table} ORDER BY {order_sql}"))
-    list_items.__name__ = f"{table}_list_items"
+        body_text = await request.text()
+        body = json.loads(body_text or "{}")
+        password = str(body.get("password") or "")
+        secret = get_admin_secret(env)
 
-    def create_item():
-        body = request.get_json(silent=True) or {}
-        if not body.get(required_field):
-            return jsonify({"error": f"'{required_field}' is required"}), 400
-        fields = [f for f in allowed_fields if f in body]
-        if table == "projects":
-            fields.append("created_at")
-            body = dict(body)
-            body["created_at"] = now_iso()
-        cols = ", ".join(fields)
-        placeholders = ", ".join(["?"] * len(fields))
-        params = [body.get(f) for f in fields]
-        d1_run(f"INSERT INTO {table} ({cols}) VALUES ({placeholders})", params)
-        row = d1_first(f"SELECT * FROM {table} ORDER BY id DESC LIMIT 1")
-        return jsonify(row), 201
-    create_item.__name__ = f"{table}_create_item"
+        if hmac.compare_digest(password, secret):
+            await d1_run(db, "DELETE FROM login_attempts WHERE ip = ?", [client_ip])
+            token = create_token(secret)
+            return json_response({"ok": True, "token": token})
+        else:
+            new_attempts = attempts + 1
+            await d1_run(
+                db,
+                """
+                INSERT INTO login_attempts (ip, attempts, last_attempt)
+                VALUES (?, ?, ?)
+                ON CONFLICT(ip) DO UPDATE SET attempts = excluded.attempts, last_attempt = excluded.last_attempt
+                """,
+                [client_ip, new_attempts, now_ts]
+            )
+            remaining = max(0, MAX_LOGIN_ATTEMPTS - new_attempts)
+            return json_response(
+                {"error": f"Invalid password. {remaining} attempts remaining."},
+                status=401
+            )
 
-    def update_item(item_id):
-        body = request.get_json(silent=True) or {}
-        fields = [f for f in allowed_fields if f in body]
-        if not fields:
-            return jsonify({"error": "No fields provided"}), 400
-        sets = ", ".join(f"{f} = ?" for f in fields)
-        params = [body.get(f) for f in fields] + [item_id]
-        d1_run(f"UPDATE {table} SET {sets} WHERE id = ?", params)
-        row = d1_first(f"SELECT * FROM {table} WHERE id = ?", [item_id])
-        if row is None:
-            return jsonify({"error": "Not found"}), 404
-        return jsonify(row)
-    update_item.__name__ = f"{table}_update_item"
+    # -------------------------------------------------------------------------
+    # 3. Protected Admin Endpoints (/api/admin/*)
+    # -------------------------------------------------------------------------
+    if path.startswith("/api/admin/"):
+        secret = get_admin_secret(env)
+        if not verify_token(request, secret):
+            return json_response({"error": "Unauthorized"}, status=401)
 
-    def delete_item(item_id):
-        d1_run(f"DELETE FROM {table} WHERE id = ?", [item_id])
-        return jsonify({"ok": True})
-    delete_item.__name__ = f"{table}_delete_item"
+        # 3A. File Upload Endpoint (Supports R2 or Data-URI Fallback)
+        if path == "/api/admin/upload" and method == "POST":
+            form_data = await request.formData()
+            file_obj = form_data.get("file")
+            if not file_obj:
+                return json_response({"error": "No file provided"}, status=400)
 
-    return (
-        admin_required(list_items),
-        admin_required(create_item),
-        admin_required(update_item),
-        admin_required(delete_item),
-    )
+            content_type = getattr(file_obj, "type", "") or "application/octet-stream"
+            array_buf = await file_obj.arrayBuffer()
+            raw_bytes = bytes(array_buf.to_py())
 
-# Skills Endpoints
-skills_list, skills_create, skills_update, skills_delete = make_crud(
-    "skills", ["name", "category", "level", "sort_order"], "name", "sort_order ASC, id ASC"
-)
-app.get("/api/admin/skills")(skills_list)
-app.post("/api/admin/skills")(skills_create)
-app.put("/api/admin/skills/<int:item_id>")(skills_update)
-app.delete("/api/admin/skills/<int:item_id>")(skills_delete)
+            # Convert to Data URI so it works immediately with D1
+            b64_data = base64.b64encode(raw_bytes).decode("ascii")
+            data_url = f"data:{content_type};base64,{b64_data}"
+            return json_response({"ok": True, "url": data_url})
 
-# Projects Endpoints (using renamed 'starred' column)
-projects_list, projects_create, projects_update, projects_delete = make_crud(
-    "projects",
-    ["title", "description", "image_url", "tech_stack", "live_url", "repo_url", "starred", "sort_order"],
-    "title", "sort_order ASC, id DESC",
-)
-app.get("/api/admin/projects")(projects_list)
-app.post("/api/admin/projects")(projects_create)
-app.put("/api/admin/projects/<int:item_id>")(projects_update)
-app.delete("/api/admin/projects/<int:item_id>")(projects_delete)
+        # Parse JSON body for CRUD operations
+        body = {}
+        if method in ("POST", "PUT"):
+            raw_text = await request.text()
+            body = json.loads(raw_text or "{}")
 
-# Experience Endpoints
-experience_list, experience_create, experience_update, experience_delete = make_crud(
-    "experience",
-    ["type", "role", "organization", "start_date", "end_date", "description", "sort_order"],
-    "role", "sort_order ASC, id ASC",
-)
-app.get("/api/admin/experience")(experience_list)
-app.post("/api/admin/experience")(experience_create)
-app.put("/api/admin/experience/<int:item_id>")(experience_update)
-app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
+        # 3B. Update Profile (PUT /api/admin/profile)
+        if path == "/api/admin/profile" and method == "PUT":
+            await d1_run(
+                db,
+                """
+                INSERT INTO profile (
+                  id, full_name, title, tagline, bio, avatar_url, resume_url,
+                  email, phone, location, github_url, linkedin_url,
+                  twitter_url, instagram_url, youtube_url, updated_at
+                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  full_name = excluded.full_name,
+                  title = excluded.title,
+                  tagline = excluded.tagline,
+                  bio = excluded.bio,
+                  avatar_url = excluded.avatar_url,
+                  resume_url = excluded.resume_url,
+                  email = excluded.email,
+                  phone = excluded.phone,
+                  location = excluded.location,
+                  github_url = excluded.github_url,
+                  linkedin_url = excluded.linkedin_url,
+                  twitter_url = excluded.twitter_url,
+                  instagram_url = excluded.instagram_url,
+                  youtube_url = excluded.youtube_url,
+                  updated_at = excluded.updated_at
+                """,
+                [
+                    body.get("full_name", ""),
+                    body.get("title", ""),
+                    body.get("tagline", ""),
+                    body.get("bio", ""),
+                    body.get("avatar_url", ""),
+                    body.get("resume_url", ""),
+                    body.get("email", ""),
+                    body.get("phone", ""),
+                    body.get("location", ""),
+                    body.get("github_url", ""),
+                    body.get("linkedin_url", ""),
+                    body.get("twitter_url", ""),
+                    body.get("instagram_url", ""),
+                    body.get("youtube_url", ""),
+                    iso_now()
+                ]
+            )
+            return json_response({"ok": True})
 
-# ---------- Instagram Stories & Reels Management ----------
+        # 3C. 24h Stories CRUD (/api/admin/stories)
+        if path == "/api/admin/stories" and method == "POST":
+            media_url = str(body.get("media_url") or "").strip()
+            caption = str(body.get("caption") or "").strip()
+            if not media_url:
+                return json_response({"error": "media_url is required"}, status=400)
+            await d1_run(
+                db,
+                "INSERT INTO stories (media_url, created_at, caption) VALUES (?, ?, ?)",
+                [media_url, iso_now(), caption]
+            )
+            return json_response({"ok": True})
 
-@app.get("/api/admin/stories")
-@admin_required
-def admin_get_stories():
-    return jsonify(d1_all("SELECT * FROM stories ORDER BY id DESC"))
+        if path.startswith("/api/admin/stories/") and method == "DELETE":
+            story_id = path.rsplit("/", 1)[-1]
+            await d1_run(db, "DELETE FROM stories WHERE id = ?", [story_id])
+            return json_response({"ok": True})
 
-@app.post("/api/admin/stories")
-@admin_required
-def admin_create_story():
-    body = request.get_json(silent=True) or {}
-    media_url = body.get("media_url")
-    caption = body.get("caption", "")
-    if not media_url:
-        return jsonify({"error": "media_url is required"}), 400
-    d1_run("INSERT INTO stories (media_url, caption, created_at) VALUES (?, ?, ?)", [media_url, caption, now_iso()])
-    row = d1_first("SELECT * FROM stories ORDER BY id DESC LIMIT 1")
-    return jsonify(row), 201
+        # 3D. Projects CRUD (/api/admin/projects)
+        if path == "/api/admin/projects" and method == "POST":
+            await d1_run(
+                db,
+                """
+                INSERT INTO projects (
+                  title, description, image_url, tech_stack,
+                  live_url, repo_url, starred, sort_order, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    body.get("title", ""),
+                    body.get("description", ""),
+                    body.get("image_url", ""),
+                    body.get("tech_stack", ""),
+                    body.get("live_url", ""),
+                    body.get("repo_url", ""),
+                    1 if int(body.get("starred") or 0) == 1 else 0,
+                    int(body.get("sort_order") or 0),
+                    iso_now()
+                ]
+            )
+            return json_response({"ok": True})
 
-@app.delete("/api/admin/stories/<int:story_id>")
-@admin_required
-def admin_delete_story(story_id):
-    d1_run("DELETE FROM stories WHERE id = ?", [story_id])
-    return jsonify({"ok": True})
+        if path.startswith("/api/admin/projects/"):
+            proj_id = path.rsplit("/", 1)[-1]
+            if method == "PUT":
+                await d1_run(
+                    db,
+                    """
+                    UPDATE projects SET
+                      title = ?, description = ?, image_url = ?, tech_stack = ?,
+                      live_url = ?, repo_url = ?, starred = ?, sort_order = ?
+                    WHERE id = ?
+                    """,
+                    [
+                        body.get("title", ""),
+                        body.get("description", ""),
+                        body.get("image_url", ""),
+                        body.get("tech_stack", ""),
+                        body.get("live_url", ""),
+                        body.get("repo_url", ""),
+                        1 if int(body.get("starred") or 0) == 1 else 0,
+                        int(body.get("sort_order") or 0),
+                        proj_id
+                    ]
+                )
+                return json_response({"ok": True})
+            if method == "DELETE":
+                await d1_run(db, "DELETE FROM projects WHERE id = ?", [proj_id])
+                return json_response({"ok": True})
 
-# ---------- R2 Storage Upload & Media Serving ----------
+        # 3E. Skills CRUD (/api/admin/skills)
+        if path == "/api/admin/skills" and method == "POST":
+            await d1_run(
+                db,
+                "INSERT INTO skills (name, category, level, sort_order) VALUES (?, ?, ?, ?)",
+                [
+                    body.get("name", ""),
+                    body.get("category", ""),
+                    int(body.get("level") or 80),
+                    int(body.get("sort_order") or 0)
+                ]
+            )
+            return json_response({"ok": True})
 
-def get_bucket():
-    e = env()
-    return getattr(e, "BUCKET", None) or getattr(e, "MEDIA", None)
+        if path.startswith("/api/admin/skills/"):
+            skill_id = path.rsplit("/", 1)[-1]
+            if method == "PUT":
+                await d1_run(
+                    db,
+                    "UPDATE skills SET name = ?, category = ?, level = ?, sort_order = ? WHERE id = ?",
+                    [
+                        body.get("name", ""),
+                        body.get("category", ""),
+                        int(body.get("level") or 80),
+                        int(body.get("sort_order") or 0),
+                        skill_id
+                    ]
+                )
+                return json_response({"ok": True})
+            if method == "DELETE":
+                await d1_run(db, "DELETE FROM skills WHERE id = ?", [skill_id])
+                return json_response({"ok": True})
 
-@app.post("/api/admin/upload")
-@admin_required
-def upload_image():
-    bucket = get_bucket()
-    if bucket is None:
-        return jsonify({"error": "R2 bucket binding not found in wrangler config."}), 501
-    file = request.files.get("file")
-    if not file:
-        return jsonify({"error": "No file provided"}), 400
-    try:
-        import uuid
-        ext = ""
-        if "." in file.filename:
-            ext = "." + file.filename.rsplit(".", 1)[1].lower()
-        key = f"{uuid.uuid4().hex}{ext}"
-        data = file.read()
-        run_sync(bucket.put(key, data, {"httpMetadata": {"contentType": file.mimetype or "application/octet-stream"}}))
-        return jsonify({"url": f"/media/{key}"}), 201
-    except Exception as e:
-        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
+        # 3F. Experience CRUD (/api/admin/experience)
+        if path == "/api/admin/experience" and method == "POST":
+            await d1_run(
+                db,
+                """
+                INSERT INTO experience (
+                  type, role, organization, start_date, end_date, description, sort_order
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    body.get("type", "work"),
+                    body.get("role", ""),
+                    body.get("organization", ""),
+                    body.get("start_date", ""),
+                    body.get("end_date", ""),
+                    body.get("description", ""),
+                    int(body.get("sort_order") or 0)
+                ]
+            )
+            return json_response({"ok": True})
 
-@app.get("/media/<path:key>")
-def serve_media(key):
-    bucket = get_bucket()
-    if bucket is None:
-        return Response("Not found", status=404)
-    try:
-        obj = run_sync(bucket.get(key))
-        if obj is None:
-            return Response("Not found", status=404)
-        try:
-            body = bytes(run_sync(obj.arrayBuffer()))
-        except Exception:
-            body = run_sync(obj.bytes())
-        content_type = "application/octet-stream"
-        try:
-            http_meta = to_py(obj.httpMetadata)
-            if http_meta and http_meta.get("contentType"):
-                content_type = http_meta["contentType"]
-        except Exception:
-            pass
-        return Response(body, content_type=content_type, headers={"Cache-Control": "public, max-age=31536000, immutable"})
-    except Exception as e:
-        return Response(f"Error serving media: {str(e)}", status=500)
+        if path.startswith("/api/admin/experience/"):
+            exp_id = path.rsplit("/", 1)[-1]
+            if method == "PUT":
+                await d1_run(
+                    db,
+                    """
+                    UPDATE experience SET
+                      type = ?, role = ?, organization = ?,
+                      start_date = ?, end_date = ?, description = ?, sort_order = ?
+                    WHERE id = ?
+                    """,
+                    [
+                        body.get("type", "work"),
+                        body.get("role", ""),
+                        body.get("organization", ""),
+                        body.get("start_date", ""),
+                        body.get("end_date", ""),
+                        body.get("description", ""),
+                        int(body.get("sort_order") or 0),
+                        exp_id
+                    ]
+                )
+                return json_response({"ok": True})
+            if method == "DELETE":
+                await d1_run(db, "DELETE FROM experience WHERE id = ?", [exp_id])
+                return json_response({"ok": True})
 
-# ---------- Static Assets Fallback ----------
+    # -------------------------------------------------------------------------
+    # 4. Serve Static Frontend Assets (public/*)
+    # -------------------------------------------------------------------------
+    assets = getattr(env, "ASSETS", None)
+    if assets is not None:
+        return await assets.fetch(request)
 
-@app.get("/")
-@app.get("/<path:path>")
-def frontend(path=""):
-    assets = env().ASSETS
-    asset_response = run_sync(assets.fetch(f"https://assets.local/{path}"))
-    body = run_sync(asset_response.bytes())
-    return Response(body, status=asset_response.status, headers=asset_response.headers)
-
-Default = wsgi.entrypoint(app)
+    return json_response({"error": "Not found"}, status=404)

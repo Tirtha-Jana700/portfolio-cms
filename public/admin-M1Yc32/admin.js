@@ -1,322 +1,902 @@
-(function () {
-"use strict";
-​const api = (path, opts) => fetch("/api/admin" + path, {
-credentials: "include",
-headers: { "Content-Type": "application/json" },
-...opts,
-});
-​const loginWrap = document.getElementById("loginWrap");
-const adminShell = document.getElementById("adminShell");
-​// ---------- Apple Floating Toast Notification Helper ----------
-​function showToast(message, type) {
-const container = document.getElementById("toastContainer");
-if (!container) return;
-const toast = document.createElement("div");
-toast.className = toast toast-${type || "success"};
-toast.textContent = message;
-container.appendChild(toast);
-​requestAnimationFrame(() => {
-toast.classList.add("toast-in");
-});
-​setTimeout(() => {
-toast.classList.remove("toast-in");
-setTimeout(() => toast.remove(), 350);
-}, 3000);
-}
-​async function checkSession() {
-try {
-const res = await api("/session");
-const data = await res.json();
-if (data.authenticated) { showDashboard(); } else { showLogin(); }
-} catch (e) { showLogin(); }
-}
-​function showLogin() {
-loginWrap.style.display = "flex";
-adminShell.classList.remove("active");
-}
-​function showDashboard() {
-loginWrap.style.display = "none";
-adminShell.classList.add("active");
-loadProfile();
-loadList("skills");
-loadList("projects");
-loadList("experience");
-loadStories();
-}
-​document.getElementById("loginForm").addEventListener("submit", async (e) => {
-e.preventDefault();
-const password = document.getElementById("loginPassword").value;
-const errorBox = document.getElementById("loginError");
-errorBox.textContent = "";
-​try {
-const res = await api("/login", { method: "POST", body: JSON.stringify({ password }) });
-const data = await res.json();
-if (res.ok) {
-document.getElementById("loginPassword").value = "";
-showDashboard();
-showToast("Signed in successfully!", "success");
-} else {
-errorBox.textContent = data.error || "Authentication failed";
-showToast("Failed to authenticate", "error");
-}
-} catch (e) {
-errorBox.textContent = "Network error";
-showToast("Network error connecting to backend", "error");
-}
-});
-​document.getElementById("logoutBtn").addEventListener("click", async () => {
-await api("/logout", { method: "POST" });
-showLogin();
-showToast("Logged out", "success");
-});
-​document.querySelectorAll(".admin-tab").forEach(tab => {
-tab.addEventListener("click", () => {
-document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
-document.querySelectorAll(".admin-panel").forEach(p => p.classList.remove("active"));
-tab.classList.add("active");
-document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
-});
-});
-​// ---------- Previews Helper ----------
-​function renderPreviews(containerId, currentUrl, savedUrl) {
-const container = document.getElementById(containerId);
-if (!container) return;
-container.innerHTML = "";
-​if (savedUrl) {
-const box = el("div", "preview-box");
-const isVid = savedUrl.match(/.(mp4|webm|ogg|mov)/i);
-box.innerHTML = isVid
-? `<video src="${escapeHtml(savedUrl)}" muted></video><span class="preview-label">Saved</span>`
-: `<img src="${escapeHtml(savedUrl)}" alt="Saved" /><span class="preview-label">Saved</span>`;
-container.appendChild(box);
-}
-if (currentUrl && currentUrl !== savedUrl) {
-const box = el("div", "preview-box");
-const isVid = currentUrl.match(/\.(mp4|webm|ogg|mov)/i);
-box.innerHTML = isVid
-? <video src="${escapeHtml(currentUrl)}" muted autoplay></video><span class="preview-label">Current</span>
-: <img src="${escapeHtml(currentUrl)}" alt="Current" /><span class="preview-label">Current</span>;
-container.appendChild(box);
-}
-}
-​function el(tag, cls, html) {
-const node = document.createElement(tag);
-if (cls) node.className = cls;
-if (html !== undefined) node.innerHTML = html;
-return node;
-}
-​function escapeHtml(str) {
-const d = document.createElement("div");
-d.textContent = str == null ? "" : String(str);
-return d.innerHTML;
-}
-​// ---------- Profile Loader & Saver ----------
-​let savedAvatarUrl = "";
-async function loadProfile() {
-try {
-const res = await fetch("/api/portfolio");
-const data = await res.json();
-const form = document.getElementById("profileForm");
-const profile = data.profile || {};
-Object.keys(profile).forEach(key => {
-const input = form.elements.namedItem(key);
-if (input) input.value = profile[key] || "";
-});
-if (profile.avatar_url) {
-savedAvatarUrl = profile.avatar_url;
-document.getElementById("avatarUrlInput").value = profile.avatar_url;
-renderPreviews("avatarPreviewContainer", profile.avatar_url, savedAvatarUrl);
-}
-} catch (e) {
-showToast("Failed to fetch profile info", "error");
-}
-}
-​document.getElementById("profileForm").addEventListener("submit", async (e) => {
-e.preventDefault();
-const body = {};
-new FormData(e.target).forEach((v, k) => { body[k] = v; });
-const res = await api("/profile", { method: "PUT", body: JSON.stringify(body) });
-if (res.ok) {
-savedAvatarUrl = body.avatar_url;
-showToast("Profile updated successfully!", "success");
-} else {
-showToast("Could not save profile", "error");
-}
-});
-​// ---------- CRUD Collections (Skills, Projects, Experience) ----------
-​const CONFIG = {
-skills: { listEl: "skillsList", formEl: "skillForm", titleField: "name", subFn: i => ${i.category || ""} · ${i.level}% },
-projects: { listEl: "projectsList", formEl: "projectForm", titleField: "title", subFn: i => Number(i.starred) === 1 ? "★ Starred (Featured)" : i.tech_stack || "" },
-experience: { listEl: "experienceList", formEl: "experienceForm", titleField: "role", subFn: i => ${i.organization || ""} (${i.start_date || ""} - ${i.end_date || ""}) }
-};
-​let savedProjectImgUrl = "";
-​async function loadList(type) {
-const cfg = CONFIG[type];
-const res = await api("/" + type);
-const items = await res.json();
-const listEl = document.getElementById(cfg.listEl);
-listEl.innerHTML = "";
-if (!Array.isArray(items) || !items.length) {
-listEl.innerHTML = '<p class="empty-note">No entries created yet.</p>';
-return;
-}
-items.forEach(item => {
-const row = document.createElement("div");
-row.className = "card item-row";
-row.innerHTML = <div class="item-main"> <div class="item-title">${escapeHtml(item[cfg.titleField])}</div> <div class="item-sub">${escapeHtml(cfg.subFn(item))}</div> </div> <div style="display:flex; gap:8px;"> <button type="button" class="icon-btn edit-btn" title="Edit">✎</button> <button type="button" class="icon-btn btn-danger del-btn" title="Delete">✕</button> </div>;
-row.querySelector(".edit-btn").addEventListener("click", () => fillForm(type, item));
-row.querySelector(".del-btn").addEventListener("click", async () => {
-if (!confirm("Are you sure you want to delete this item?")) return;
-const delRes = await api(/${type}/${item.id}, { method: "DELETE" });
-if (delRes.ok) {
-showToast("Item deleted", "success");
-loadList(type);
-} else {
-showToast("Failed to delete item", "error");
-}
-});
-listEl.appendChild(row);
-});
-}
-​function fillForm(type, item) {
-const form = document.getElementById(CONFIG[type].formEl);
-Object.keys(item).forEach(key => {
-const input = form.elements.namedItem(key);
-if (input) {
-if (input.type === "checkbox") input.checked = Number(item[key]) === 1;
-else input.value = item[key] ?? "";
-}
-});
-if (type === "projects" && item.image_url) {
-savedProjectImgUrl = item.image_url;
-renderPreviews("projectPreviewContainer", item.image_url, savedProjectImgUrl);
-}
-form.scrollIntoView({ behavior: "smooth" });
-}
-​function clearForm(type) {
-const form = document.getElementById(CONFIG[type].formEl);
-form.reset();
-form.elements.namedItem("id").value = "";
-if (type === "projects") {
-document.getElementById("projectPreviewContainer").innerHTML = "";
-savedProjectImgUrl = "";
-}
-}
-​Object.keys(CONFIG).forEach(type => {
-const form = document.getElementById(CONFIG[type].formEl);
-form.addEventListener("submit", async (e) => {
-e.preventDefault();
-const body = {};
-new FormData(form).forEach((v, k) => { if (k !== "id") body[k] = v; });
-​const starredBox = form.elements.namedItem("starred");
-if (starredBox) body.starred = starredBox.checked ? 1 : 0;
-​const id = form.elements.namedItem("id").value;
-const res = id ? await api(/${type}/${id}, { method: "PUT", body: JSON.stringify(body) })
-: await api(/${type}, { method: "POST", body: JSON.stringify(body) });
-if (res.ok) {
-showToast(id ? "Updated successfully!" : "Added successfully!", "success");
-clearForm(type);
-loadList(type);
-} else {
-showToast("Save failed", "error");
-}
-});
-const cancelBtn = form.querySelector("[data-cancel-edit]");
-if (cancelBtn) cancelBtn.addEventListener("click", () => clearForm(type));
-});
-​// ---------- 24h Instagram Stories & Reels ----------
-​async function loadStories() {
-const res = await api("/stories");
-const stories = await res.json();
-const listEl = document.getElementById("storiesList");
-listEl.innerHTML = "";
-if (!Array.isArray(stories) || !stories.length) {
-listEl.innerHTML = '<p class="empty-note">No stories currently active.</p>';
-return;
-}
-stories.forEach(s => {
-const isVid = s.media_url.match(/.(mp4|webm|ogg|mov)$/i);
-const row = document.createElement("div");
-row.className = "card item-row";
-row.innerHTML = <div style="display:flex; align-items:center; gap:14px;"> <div style="width:46px; height:46px; border-radius:10px; overflow:hidden; background:#000;"> ${isVid ?<video src="${escapeHtml(s.media_url)}" style="width:100%;height:100%;object-fit:cover;"></video>:<img src="${escapeHtml(s.media_url)}" style="width:100%;height:100%;object-fit:cover;" />} </div> <div> <strong>Story #${s.id}</strong> <div style="font-size:0.8rem; color:var(--text-faint);">${escapeHtml(s.caption || "No caption")} · ${new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div> </div> </div> <button type="button" class="icon-btn btn-danger del-story-btn">✕</button> ;
-row.querySelector(".del-story-btn").addEventListener("click", async () => {
-if (!confirm("Delete story?")) return;
-const delRes = await api(/stories/${s.id}, { method: "DELETE" });
-if (delRes.ok) {
-showToast("Story deleted", "success");
-loadStories();
-} else {
-showToast("Failed to delete story", "error");
-}
-});
-listEl.appendChild(row);
-});
-}
-​document.getElementById("storyForm").addEventListener("submit", async (e) => {
-e.preventDefault();
-const media_url = document.getElementById("storyMediaUrlInput").value;
-const caption = e.target.elements.namedItem("caption").value;
-if (!media_url) {
-showToast("Please upload media first", "error");
-return;
-}
-const res = await api("/stories", { method: "POST", body: JSON.stringify({ media_url, caption }) });
-if (res.ok) {
-showToast("Story published to homepage ring!", "success");
-document.getElementById("storyForm").reset();
-document.getElementById("storyPreviewContainer").innerHTML = "";
-loadStories();
-} else {
-showToast("Failed to publish story", "error");
-}
-});
-​// ---------- Progress-Tracked File Uploads ----------
-​document.querySelectorAll('input[type="file"][data-upload-target]').forEach(fileInput => {
-fileInput.addEventListener("change", async (e) => {
-const file = e.target.files[0];
-if (!file) return;
-​const targetId = fileInput.dataset.uploadTarget;
-const progressId = fileInput.dataset.progressId;
-const previewId = fileInput.dataset.previewId;
-const targetInput = document.getElementById(targetId);
-const track = document.getElementById(progressId);
-const fill = track ? track.querySelector(".upload-progress-fill") : null;
-​if (track) track.style.display = "block";
-if (fill) fill.style.width = "0%";
-​const xhr = new XMLHttpRequest();
-xhr.open("POST", "/api/admin/upload");
-xhr.withCredentials = true;
-​xhr.upload.onprogress = (ev) => {
-if (ev.lengthComputable && fill) {
-const pct = Math.round((ev.loaded / ev.total) * 100);
-fill.style.width = pct + "%";
-}
-};
-​xhr.onload = () => {
-if (xhr.status >= 200 && xhr.status < 300) {
-try {
-const data = JSON.parse(xhr.responseText);
-targetInput.value = data.url;
-if (targetId === "avatarUrlInput") renderPreviews(previewId, data.url, savedAvatarUrl);
-else if (targetId === "projectImageUrlInput") renderPreviews(previewId, data.url, savedProjectImgUrl);
-else renderPreviews(previewId, data.url, "");
-showToast("Media uploaded successfully!", "success");
-} catch (err) {
-showToast("Upload response invalid", "error");
-}
-} else {
-showToast("Upload failed — check size or credentials", "error");
-}
-if (track) setTimeout(() => { track.style.display = "none"; }, 900);
-};
-​xhr.onerror = () => {
-showToast("Upload network failure", "error");
-if (track) track.style.display = "none";
-};
-​const fd = new FormData();
-fd.append("file", file);
-xhr.send(fd);
-});
-});
-​checkSession();
+/**
+ * ============================================================================
+ * Spatial Glass Admin Dashboard Engine (public/admin-XXXXXX/admin.js)
+ * ============================================================================
+ * Features:
+ *  - Session authentication with brute-force feedback
+ *  - Sliding bouncy pill tab bar (#adminTabIndicator)
+ *  - XMLHttpRequest live upload progress bars (0% - 100%)
+ *  - Dual media previews (Saved in DB vs Staged/Current)
+ *  - 24h Story & Video Reel publisher + active countdown list
+ *  - One-tap Project Star toggle & full CRUD for all 6 D1 tables
+ * ============================================================================
+ */
+
+(() => {
+  "use strict";
+
+  const TOKEN_KEY = "spatial_admin_token_v1";
+
+  const state = {
+    token: sessionStorage.getItem(TOKEN_KEY) || "",
+    profile: {},
+    stories: [],
+    projects: [],
+    skills: [],
+    experience: []
+  };
+
+  // --------------------------------------------------------------------------
+  // Helper Utilities & Toast Notifications
+  // --------------------------------------------------------------------------
+
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function showToast(message, type = "success") {
+    const stack = document.getElementById("toastStack");
+    if (!stack) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast ${type === "error" ? "toast-error" : "toast-success"}`;
+    const icon = type === "error" ? "⚠️" : "✓";
+    toast.innerHTML = `<span>${icon}</span><span>${escapeHtml(message)}</span>`;
+    stack.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(12px) scale(0.92)";
+      toast.style.transition = "all 0.3s ease";
+      setTimeout(() => toast.remove(), 300);
+    }, 3400);
+  }
+
+  function isVideoUrl(url) {
+    if (!url) return false;
+    const lower = String(url).trim().toLowerCase();
+    if (lower.startsWith("data:video/")) return true;
+    return /\.(mp4|webm|ogg|mov|m4v)$/.test(lower.split("?")[0]);
+  }
+
+  function renderMediaFrame(containerId, url) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    if (!url || !String(url).trim()) {
+      el.innerHTML = "None";
+      return;
+    }
+    const safeUrl = escapeHtml(url);
+    if (isVideoUrl(url)) {
+      el.innerHTML = `<video src="${safeUrl}" muted playsinline loop autoplay></video>`;
+    } else {
+      el.innerHTML = `<img src="${safeUrl}" alt="Preview" />`;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Authenticated API Request Wrapper
+  // --------------------------------------------------------------------------
+
+  async function apiRequest(path, options = {}) {
+    const headers = Object.assign(
+      { "Content-Type": "application/json", Accept: "application/json" },
+      options.headers || {}
+    );
+
+    if (state.token) {
+      headers["Authorization"] = `Bearer ${state.token}`;
+    }
+
+    const response = await fetch(path, {
+      ...options,
+      headers
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (response.status === 401) {
+      handleLogout(false);
+      throw new Error(data.error || "Session expired. Please log in again.");
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || `Request failed (${response.status})`);
+    }
+
+    return data;
+  }
+
+  // --------------------------------------------------------------------------
+  // Live Percentage File Upload via XMLHttpRequest
+  // --------------------------------------------------------------------------
+
+  function bindUploadDropzone({
+    dropzoneId,
+    fileInputId,
+    progressWrapId,
+    progressPctId,
+    progressFillId,
+    targetInputId,
+    previewContainerId
+  }) {
+    const dropzone = document.getElementById(dropzoneId);
+    const fileInput = document.getElementById(fileInputId);
+    const progressWrap = document.getElementById(progressWrapId);
+    const progressPct = document.getElementById(progressPctId);
+    const progressFill = document.getElementById(progressFillId);
+    const targetInput = document.getElementById(targetInputId);
+
+    if (!dropzone || !fileInput) return;
+
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        uploadFileWithProgress(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files && fileInput.files[0]) {
+        uploadFileWithProgress(fileInput.files[0]);
+      }
+    });
+
+    if (targetInput && previewContainerId) {
+      targetInput.addEventListener("input", () => {
+        renderMediaFrame(previewContainerId, targetInput.value);
+      });
+    }
+
+    function uploadFileWithProgress(file) {
+      if (progressWrap) progressWrap.classList.remove("hidden");
+      if (progressPct) progressPct.textContent = "0%";
+      if (progressFill) progressFill.style.width = "0%";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/admin/upload", true);
+      if (state.token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${state.token}`);
+      }
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const pct = Math.round((event.loaded / event.total) * 100);
+          if (progressPct) progressPct.textContent = `${pct}%`;
+          if (progressFill) progressFill.style.width = `${pct}%`;
+        }
+      };
+
+      xhr.onload = () => {
+        setTimeout(() => {
+          if (progressWrap) progressWrap.classList.add("hidden");
+        }, 600);
+
+        try {
+          const res = JSON.parse(xhr.responseText || "{}");
+          if (xhr.status >= 200 && xhr.status < 300 && res.url) {
+            if (targetInput) targetInput.value = res.url;
+            if (previewContainerId) renderMediaFrame(previewContainerId, res.url);
+            showToast("File uploaded (" + file.name + ")");
+          } else {
+            showToast(res.error || "Upload failed", "error");
+          }
+        } catch {
+          showToast("Invalid server response during upload", "error");
+        }
+      };
+
+      xhr.onerror = () => {
+        if (progressWrap) progressWrap.classList.add("hidden");
+        showToast("Network error during file upload", "error");
+      };
+
+      xhr.send(formData);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Sliding Bouncy Pill Tab Bar
+  // --------------------------------------------------------------------------
+
+  function updateTabIndicator(activeBtn) {
+    const tabsContainer = document.getElementById("adminTabs");
+    const indicator = document.getElementById("adminTabIndicator");
+    if (!tabsContainer || !indicator || !activeBtn) return;
+
+    const containerRect = tabsContainer.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+
+    const left = btnRect.left - containerRect.left + tabsContainer.scrollLeft;
+    const top = btnRect.top - containerRect.top;
+
+    indicator.style.width = `${btnRect.width}px`;
+    indicator.style.height = `${btnRect.height}px`;
+    indicator.style.left = `${left}px`;
+    indicator.style.top = `${top}px`;
+  }
+
+  function initTabs() {
+    const tabsContainer = document.getElementById("adminTabs");
+    if (!tabsContainer) return;
+
+    const buttons = Array.from(tabsContainer.querySelectorAll(".admin-tab-btn"));
+    const panes = Array.from(document.querySelectorAll(".admin-tab-pane"));
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        buttons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const targetTab = btn.dataset.tab;
+        panes.forEach((pane) => {
+          pane.classList.toggle("hidden", pane.id !== `tab-${targetTab}`);
+        });
+
+        updateTabIndicator(btn);
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      const current = tabsContainer.querySelector(".admin-tab-btn.active");
+      if (current) updateTabIndicator(current);
+    });
+
+    requestAnimationFrame(() => {
+      const current = tabsContainer.querySelector(".admin-tab-btn.active");
+      if (current) updateTabIndicator(current);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // Data Loading & Rendering Across All 6 Tables
+  // --------------------------------------------------------------------------
+
+  async function fetchAllData() {
+    try {
+      const data = await apiRequest("/api/portfolio", { method: "GET" });
+      state.profile = data.profile || {};
+      state.stories = Array.isArray(data.stories) ? data.stories : [];
+      state.projects = Array.isArray(data.projects) ? data.projects : [];
+      state.skills = Array.isArray(data.skills) ? data.skills : [];
+      state.experience = Array.isArray(data.experience) ? data.experience : [];
+
+      populateProfileForm();
+      renderAdminStories();
+      renderAdminProjects();
+      renderAdminSkills();
+      renderAdminExperience();
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  }
+
+  // 1. Profile Form Population
+  function populateProfileForm() {
+    const p = state.profile;
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val || "";
+    };
+
+    setVal("profFullName", p.full_name);
+    setVal("profTitle", p.title);
+    setVal("profTagline", p.tagline);
+    setVal("profBio", p.bio);
+    setVal("profAvatarUrl", p.avatar_url);
+    setVal("profResumeUrl", p.resume_url);
+    setVal("profEmail", p.email);
+    setVal("profPhone", p.phone);
+    setVal("profLocation", p.location);
+    setVal("profGithub", p.github_url);
+    setVal("profLinkedin", p.linkedin_url);
+    setVal("profTwitter", p.twitter_url);
+    setVal("profInstagram", p.instagram_url);
+    setVal("profYoutube", p.youtube_url);
+
+    renderMediaFrame("avatarSavedPreview", p.avatar_url);
+    renderMediaFrame("avatarCurrentPreview", p.avatar_url);
+  }
+
+  // 2. Stories List Rendering
+  function renderAdminStories() {
+    const listEl = document.getElementById("adminStoriesList");
+    if (!listEl) return;
+
+    if (!state.stories.length) {
+      listEl.innerHTML = `<div class="card empty-note">No active stories in the last 24 hours.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = state.stories
+      .map((s) => {
+        const video = isVideoUrl(s.media_url);
+        const mediaThumb = video
+          ? `<video class="admin-item-thumb" src="${escapeHtml(s.media_url)}" muted></video>`
+          : `<img class="admin-item-thumb" src="${escapeHtml(s.media_url)}" alt="Story" />`;
+
+        return `
+          <div class="card admin-item-card">
+            <div class="admin-item-info">
+              ${mediaThumb}
+              <div>
+                <div class="admin-item-title">
+                  <span>${escapeHtml(s.caption || "Untitled Story")}</span>
+                  <span class="badge">${video ? "Video Reel" : "Photo"}</span>
+                </div>
+                <div class="admin-item-sub">Created: ${escapeHtml(s.created_at || "Just now")}</div>
+              </div>
+            </div>
+            <div class="admin-item-actions">
+              <button type="button" class="btn btn-danger btn-sm" data-delete-story="${s.id}">Delete</button>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    listEl.querySelectorAll("[data-delete-story]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-delete-story");
+        try {
+          await apiRequest(`/api/admin/stories/${id}`, { method: "DELETE" });
+          showToast("Story deleted");
+          fetchAllData();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+    });
+  }
+
+  // 3. Projects List Rendering & One-Tap Star Toggle
+  function renderAdminProjects() {
+    const listEl = document.getElementById("adminProjectsList");
+    if (!listEl) return;
+
+    if (!state.projects.length) {
+      listEl.innerHTML = `<div class="card empty-note">No projects added yet.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = state.projects
+      .map((p) => {
+        const isStarred = Number(p.starred) === 1;
+        const thumb = p.image_url
+          ? `<img class="admin-item-thumb" src="${escapeHtml(p.image_url)}" alt="" />`
+          : `<div class="admin-item-thumb" style="display:flex;align-items:center;justify-content:center;">📁</div>`;
+
+        return `
+          <div class="card admin-item-card">
+            <div class="admin-item-info">
+              ${thumb}
+              <div>
+                <div class="admin-item-title">
+                  <span>${escapeHtml(p.title)}</span>
+                  ${
+                    isStarred
+                      ? `<span class="badge" style="color:var(--star-gold);border-color:rgba(255,214,10,0.4);">★ Popular</span>`
+                      : ""
+                  }
+                </div>
+                <div class="admin-item-sub">${escapeHtml(p.tech_stack || "")}</div>
+              </div>
+            </div>
+            <div class="admin-item-actions">
+              <button type="button" class="btn btn-sm" data-toggle-star="${p.id}" title="Toggle Starred Status">
+                ${isStarred ? "★ Unstar" : "☆ Star"}
+              </button>
+              <button type="button" class="btn btn-sm" data-edit-project="${p.id}">Edit</button>
+              <button type="button" class="btn btn-danger btn-sm" data-delete-project="${p.id}">Delete</button>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    // Quick Star / Unstar Button
+    listEl.querySelectorAll("[data-toggle-star]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = Number(btn.getAttribute("data-toggle-star"));
+        const proj = state.projects.find((item) => Number(item.id) === id);
+        if (!proj) return;
+        const newStarred = Number(proj.starred) === 1 ? 0 : 1;
+        try {
+          await apiRequest(`/api/admin/projects/${id}`, {
+            method: "PUT",
+            body: JSON.stringify({ ...proj, starred: newStarred })
+          });
+          showToast(newStarred ? "Marked as ★ Popular!" : "Removed from Popular");
+          fetchAllData();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+    });
+
+    // Edit Project Button
+    listEl.querySelectorAll("[data-edit-project]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = Number(btn.getAttribute("data-edit-project"));
+        const proj = state.projects.find((item) => Number(item.id) === id);
+        if (!proj) return;
+
+        document.getElementById("projectFormHeading").textContent = "Edit Project";
+        document.getElementById("projId").value = proj.id;
+        document.getElementById("projTitle").value = proj.title || "";
+        document.getElementById("projDesc").value = proj.description || "";
+        document.getElementById("projTech").value = proj.tech_stack || "";
+        document.getElementById("projImageUrl").value = proj.image_url || "";
+        document.getElementById("projLiveUrl").value = proj.live_url || "";
+        document.getElementById("projRepoUrl").value = proj.repo_url || "";
+        document.getElementById("projSortOrder").value = proj.sort_order ?? 0;
+        document.getElementById("projStarred").checked = Number(proj.starred) === 1;
+
+        renderMediaFrame("projSavedPreview", proj.image_url);
+        renderMediaFrame("projCurrentPreview", proj.image_url);
+
+        document.getElementById("projCancelEditBtn").classList.remove("hidden");
+        document.getElementById("projectForm").scrollIntoView({ behavior: "smooth" });
+      });
+    });
+
+    // Delete Project Button
+    listEl.querySelectorAll("[data-delete-project]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-delete-project");
+        try {
+          await apiRequest(`/api/admin/projects/${id}`, { method: "DELETE" });
+          showToast("Project deleted");
+          fetchAllData();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+    });
+  }
+
+  // 4. Skills List Rendering
+  function renderAdminSkills() {
+    const listEl = document.getElementById("adminSkillsList");
+    if (!listEl) return;
+
+    if (!state.skills.length) {
+      listEl.innerHTML = `<div class="card empty-note">No skills added yet.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = state.skills
+      .map(
+        (s) => `
+        <div class="card admin-item-card">
+          <div class="admin-item-info">
+            <div>
+              <div class="admin-item-title">
+                <span>${escapeHtml(s.name)}</span>
+                <span class="badge">${Number(s.level ?? 80)}%</span>
+                ${s.category ? `<span class="badge">${escapeHtml(s.category)}</span>` : ""}
+              </div>
+              <div class="admin-item-sub">Sort Order: ${s.sort_order ?? 0}</div>
+            </div>
+          </div>
+          <div class="admin-item-actions">
+            <button type="button" class="btn btn-sm" data-edit-skill="${s.id}">Edit</button>
+            <button type="button" class="btn btn-danger btn-sm" data-delete-skill="${s.id}">Delete</button>
+          </div>
+        </div>
+      `
+      )
+      .join("");
+
+    listEl.querySelectorAll("[data-edit-skill]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = Number(btn.getAttribute("data-edit-skill"));
+        const skill = state.skills.find((item) => Number(item.id) === id);
+        if (!skill) return;
+
+        document.getElementById("skillFormHeading").textContent = "Edit Skill";
+        document.getElementById("skillId").value = skill.id;
+        document.getElementById("skillName").value = skill.name || "";
+        document.getElementById("skillCategory").value = skill.category || "";
+        document.getElementById("skillLevel").value = skill.level ?? 80;
+        document.getElementById("skillSortOrder").value = skill.sort_order ?? 0;
+        document.getElementById("skillCancelEditBtn").classList.remove("hidden");
+      });
+    });
+
+    listEl.querySelectorAll("[data-delete-skill]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-delete-skill");
+        try {
+          await apiRequest(`/api/admin/skills/${id}`, { method: "DELETE" });
+          showToast("Skill removed");
+          fetchAllData();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+    });
+  }
+
+  // 5. Experience & Education List Rendering
+  function renderAdminExperience() {
+    const listEl = document.getElementById("adminExpList");
+    if (!listEl) return;
+
+    if (!state.experience.length) {
+      listEl.innerHTML = `<div class="card empty-note">No timeline entries yet.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = state.experience
+      .map(
+        (e) => `
+        <div class="card admin-item-card">
+          <div class="admin-item-info">
+            <div>
+              <div class="admin-item-title">
+                <span>${escapeHtml(e.role)}</span>
+                <span class="badge">${escapeHtml(e.type || "work")}</span>
+              </div>
+              <div class="admin-item-sub">
+                ${escapeHtml(e.organization || "")} • ${escapeHtml(e.start_date || "")} — ${escapeHtml(e.end_date || "Present")}
+              </div>
+            </div>
+          </div>
+          <div class="admin-item-actions">
+            <button type="button" class="btn btn-sm" data-edit-exp="${e.id}">Edit</button>
+            <button type="button" class="btn btn-danger btn-sm" data-delete-exp="${e.id}">Delete</button>
+          </div>
+        </div>
+      `
+      )
+      .join("");
+
+    listEl.querySelectorAll("[data-edit-exp]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = Number(btn.getAttribute("data-edit-exp"));
+        const exp = state.experience.find((item) => Number(item.id) === id);
+        if (!exp) return;
+
+        document.getElementById("expFormHeading").textContent = "Edit Timeline Entry";
+        document.getElementById("expId").value = exp.id;
+        document.getElementById("expType").value = exp.type || "work";
+        document.getElementById("expRole").value = exp.role || "";
+        document.getElementById("expOrg").value = exp.organization || "";
+        document.getElementById("expStartDate").value = exp.start_date || "";
+        document.getElementById("expEndDate").value = exp.end_date || "";
+        document.getElementById("expDesc").value = exp.description || "";
+        document.getElementById("expSortOrder").value = exp.sort_order ?? 0;
+        document.getElementById("expCancelEditBtn").classList.remove("hidden");
+      });
+    });
+
+    listEl.querySelectorAll("[data-delete-exp]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-delete-exp");
+        try {
+          await apiRequest(`/api/admin/experience/${id}`, { method: "DELETE" });
+          showToast("Timeline entry deleted");
+          fetchAllData();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      });
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // Form Submissions & Authentication Handlers
+  // --------------------------------------------------------------------------
+
+  function resetProjectForm() {
+    document.getElementById("projectForm").reset();
+    document.getElementById("projId").value = "";
+    document.getElementById("projectFormHeading").textContent = "Add New Project";
+    document.getElementById("projCancelEditBtn").classList.add("hidden");
+    renderMediaFrame("projSavedPreview", "");
+    renderMediaFrame("projCurrentPreview", "");
+  }
+
+  function resetSkillForm() {
+    document.getElementById("skillForm").reset();
+    document.getElementById("skillId").value = "";
+    document.getElementById("skillFormHeading").textContent = "Add Skill";
+    document.getElementById("skillCancelEditBtn").classList.add("hidden");
+  }
+
+  function resetExpForm() {
+    document.getElementById("expForm").reset();
+    document.getElementById("expId").value = "";
+    document.getElementById("expFormHeading").textContent = "Add Timeline Entry";
+    document.getElementById("expCancelEditBtn").classList.add("hidden");
+  }
+
+  function showDashboard() {
+    document.getElementById("loginGate").classList.add("hidden");
+    document.getElementById("adminApp").classList.remove("hidden");
+    initTabs();
+    fetchAllData();
+  }
+
+  function handleLogout(notify = true) {
+    state.token = "";
+    sessionStorage.removeItem(TOKEN_KEY);
+    document.getElementById("adminApp").classList.add("hidden");
+    document.getElementById("loginGate").classList.remove("hidden");
+    if (notify) showToast("Locked Admin Dashboard");
+  }
+
+  function initAdminApp() {
+    // Bind Live XHR Dropzones
+    bindUploadDropzone({
+      dropzoneId: "avatarDropzone",
+      fileInputId: "avatarFileInput",
+      progressWrapId: "avatarProgressWrap",
+      progressPctId: "avatarProgressPct",
+      progressFillId: "avatarProgressFill",
+      targetInputId: "profAvatarUrl",
+      previewContainerId: "avatarCurrentPreview"
+    });
+
+    bindUploadDropzone({
+      dropzoneId: "resumeDropzone",
+      fileInputId: "resumeFileInput",
+      progressWrapId: "resumeProgressWrap",
+      progressPctId: "resumeProgressPct",
+      progressFillId: "resumeProgressFill",
+      targetInputId: "profResumeUrl",
+      previewContainerId: null
+    });
+
+    bindUploadDropzone({
+      dropzoneId: "storyDropzone",
+      fileInputId: "storyFileInput",
+      progressWrapId: "storyProgressWrap",
+      progressPctId: "storyProgressPct",
+      progressFillId: "storyProgressFill",
+      targetInputId: "storyMediaUrl",
+      previewContainerId: "storyCurrentPreview"
+    });
+
+    bindUploadDropzone({
+      dropzoneId: "projDropzone",
+      fileInputId: "projFileInput",
+      progressWrapId: "projProgressWrap",
+      progressPctId: "projProgressPct",
+      progressFillId: "projProgressFill",
+      targetInputId: "projImageUrl",
+      previewContainerId: "projCurrentPreview"
+    });
+
+    // Login Form
+    const loginForm = document.getElementById("loginForm");
+    if (loginForm) {
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const password = document.getElementById("adminPasswordInput").value;
+        const btn = document.getElementById("loginSubmitBtn");
+        btn.disabled = true;
+        btn.textContent = "Verifying...";
+
+        try {
+          const res = await apiRequest("/api/admin/login", {
+            method: "POST",
+            body: JSON.stringify({ password })
+          });
+          state.token = res.token;
+          sessionStorage.setItem(TOKEN_KEY, res.token);
+          document.getElementById("adminPasswordInput").value = "";
+          showToast("Welcome back to Spatial Glass Studio!");
+          showDashboard();
+        } catch (err) {
+          showToast(err.message, "error");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Unlock Dashboard";
+        }
+      });
+    }
+
+    // Logout Button
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", () => handleLogout(true));
+    }
+
+    // Profile Save Form
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        full_name: document.getElementById("profFullName").value.trim(),
+        title: document.getElementById("profTitle").value.trim(),
+        tagline: document.getElementById("profTagline").value.trim(),
+        bio: document.getElementById("profBio").value.trim(),
+        avatar_url: document.getElementById("profAvatarUrl").value.trim(),
+        resume_url: document.getElementById("profResumeUrl").value.trim(),
+        email: document.getElementById("profEmail").value.trim(),
+        phone: document.getElementById("profPhone").value.trim(),
+        location: document.getElementById("profLocation").value.trim(),
+        github_url: document.getElementById("profGithub").value.trim(),
+        linkedin_url: document.getElementById("profLinkedin").value.trim(),
+        twitter_url: document.getElementById("profTwitter").value.trim(),
+        instagram_url: document.getElementById("profInstagram").value.trim(),
+        youtube_url: document.getElementById("profYoutube").value.trim()
+      };
+
+      try {
+        await apiRequest("/api/admin/profile", {
+          method: "PUT",
+          body: JSON.stringify(payload)
+        });
+        showToast("Profile updated successfully!");
+        fetchAllData();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+
+    // Story Publish Form
+    document.getElementById("storyForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        media_url: document.getElementById("storyMediaUrl").value.trim(),
+        caption: document.getElementById("storyCaption").value.trim()
+      };
+
+      try {
+        await apiRequest("/api/admin/stories", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        document.getElementById("storyForm").reset();
+        renderMediaFrame("storyCurrentPreview", "");
+        showToast("24h Story published live!");
+        fetchAllData();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+
+    // Project Save / Update Form
+    document.getElementById("projectForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("projId").value;
+      const payload = {
+        title: document.getElementById("projTitle").value.trim(),
+        description: document.getElementById("projDesc").value.trim(),
+        tech_stack: document.getElementById("projTech").value.trim(),
+        image_url: document.getElementById("projImageUrl").value.trim(),
+        live_url: document.getElementById("projLiveUrl").value.trim(),
+        repo_url: document.getElementById("projRepoUrl").value.trim(),
+        sort_order: Number(document.getElementById("projSortOrder").value || 0),
+        starred: document.getElementById("projStarred").checked ? 1 : 0
+      };
+
+      try {
+        if (id) {
+          await apiRequest(`/api/admin/projects/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          showToast("Project updated!");
+        } else {
+          await apiRequest("/api/admin/projects", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          showToast("Project created!");
+        }
+        resetProjectForm();
+        fetchAllData();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+
+    document.getElementById("projCancelEditBtn").addEventListener("click", resetProjectForm);
+
+    // Skill Save / Update Form
+    document.getElementById("skillForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("skillId").value;
+      const payload = {
+        name: document.getElementById("skillName").value.trim(),
+        category: document.getElementById("skillCategory").value.trim(),
+        level: Number(document.getElementById("skillLevel").value || 80),
+        sort_order: Number(document.getElementById("skillSortOrder").value || 0)
+      };
+
+      try {
+        if (id) {
+          await apiRequest(`/api/admin/skills/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          showToast("Skill updated!");
+        } else {
+          await apiRequest("/api/admin/skills", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          showToast("Skill added!");
+        }
+        resetSkillForm();
+        fetchAllData();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+
+    document.getElementById("skillCancelEditBtn").addEventListener("click", resetSkillForm);
+
+    // Experience Save / Update Form
+    document.getElementById("expForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("expId").value;
+      const payload = {
+        type: document.getElementById("expType").value,
+        role: document.getElementById("expRole").value.trim(),
+        organization: document.getElementById("expOrg").value.trim(),
+        start_date: document.getElementById("expStartDate").value.trim(),
+        end_date: document.getElementById("expEndDate").value.trim(),
+        description: document.getElementById("expDesc").value.trim(),
+        sort_order: Number(document.getElementById("expSortOrder").value || 0)
+      };
+
+      try {
+        if (id) {
+          await apiRequest(`/api/admin/experience/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          showToast("Timeline entry updated!");
+        } else {
+          await apiRequest("/api/admin/experience", {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          showToast("Timeline entry added!");
+        }
+        resetExpForm();
+        fetchAllData();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+
+    document.getElementById("expCancelEditBtn").addEventListener("click", resetExpForm);
+
+    // Auto-unlock if a valid session token is already present
+    if (state.token) {
+      showDashboard();
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAdminApp);
+  } else {
+    initAdminApp();
+  }
 })();

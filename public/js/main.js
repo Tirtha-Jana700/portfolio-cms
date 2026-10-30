@@ -1,489 +1,1061 @@
-(function () {
-"use strict";
-​// SVG LinearGradient for Instagram Story Ring
-const svgGrad =  <svg width="0" height="0" style="position:absolute"> <defs> <linearGradient id="instaGradient" x1="0%" y1="0%" x2="100%" y2="100%"> <stop offset="0%" stop-color="#f09433"/> <stop offset="25%" stop-color="#e6683c"/> <stop offset="50%" stop-color="#dc2743"/> <stop offset="75%" stop-color="#cc2366"/> <stop offset="100%" stop-color="#bc1888"/> </linearGradient> </defs> </svg>;
-document.body.insertAdjacentHTML("beforeend", svgGrad);
-​const ICONS = {
-github: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12.03c0 5.05 3.29 9.33 7.84 10.84.57.1.78-.25.78-.55 0-.27-.01-1-.02-1.96-3.19.7-3.86-1.53-3.86-1.53-.52-1.34-1.28-1.7-1.28-1.7-1.04-.72.08-.7.08-.7 1.16.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.18 1.18a11.02 11.02 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.77.12 3.06.74.8 1.18 1.83 1.18 3.09 0 4.41-2.69 5.39-5.25 5.67.41.36.78 1.07.78 2.15 0 1.56-.01 2.81-.01 3.19 0 .3.2.66.79.55A10.53 10.53 0 0 0 23.5 12.03C23.5 5.73 18.27.5 12 .5z"/></svg>',
-linkedin: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.8 0 0 .78 0 1.75v20.5C0 23.22.8 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.75V1.75C24 .78 23.2 0 22.22 0z"/></svg>',
-twitter: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 1.5h3.68l-8.04 9.19L24 22.5h-7.4l-5.8-7.58-6.63 7.58H.47l8.6-9.83L0 1.5h7.59l5.24 6.93 6.07-6.93zm-1.29 18.84h2.04L6.5 3.56H4.3l13.31 16.78z"/></svg>',
-instagram: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07zM12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.8.31-1.47.72-2.14 1.39A5.9 5.9 0 0 0 .62 4.15c-.3.76-.5 1.64-.56 2.91C0 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.31.8.72 1.47 1.39 2.14.67.67 1.34 1.08 2.14 1.39.76.3 1.64.5 2.91.56C8.33 24 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56.8-.31 1.47-.72 2.14-1.39.67-.67 1.08-1.34 1.39-2.14.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.9 5.9 0 0 0-1.39-2.14A5.9 5.9 0 0 0 19.85.63c-.76-.3-1.64-.5-2.91-.56C15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1 0 12 18.16 6.16 6.16 0 0 0 12 5.84zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-10.4a1.44 1.44 0 1 1-2.88 0 1.44 1.44 0 0 1 2.88 0z"/></svg>',
-youtube: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4L15.8 12z"/></svg>',
-website: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm7.94 10h-3.1a16.6 16.6 0 0 0-1.3-6.1A10.03 10.03 0 0 1 19.94 10zM12 2.08c.9 1.1 2.03 3.3 2.34 7.92H9.66C9.97 5.38 11.1 3.18 12 2.08zM9.46 3.9A16.6 16.6 0 0 0 8.16 10h-3.1A10.03 10.03 0 0 1 9.46 3.9zM5.06 12h3.1c.14 2.25.6 4.33 1.3 6.1A10.03 10.03 0 0 1 5.06 14H12zm2.6 0h4.68c-.31 4.62-1.44 6.82-2.34 7.92-.9-1.1-2.03-3.3-2.34-7.92z"/></svg>',
-};
-​function iconFor(key) { return ICONS[key] || ICONS.website; }
-​function el(tag, cls, html) {
-const node = document.createElement(tag);
-if (cls) node.className = cls;
-if (html !== undefined) node.innerHTML = html;
-return node;
-}
-​function escapeHtml(str) {
-const d = document.createElement("div");
-d.textContent = str == null ? "" : String(str);
-return d.innerHTML;
-}
-​let portfolioData = null;
-let activeProjects = [];
-let currentProjectFilter = "all";
-let isCarouselMode = false;
-let autoScrollInterval = null;
-​async function fetchPortfolio() {
-try {
-const res = await fetch("/api/portfolio", { cache: "no-store" });
-return await res.json();
-} catch (e) {
-console.error("Failed to load portfolio", e);
-return null;
-}
-}
-​// ---------- Hero & Story Ring Setup ----------
-​function renderHero(p, stories) {
-const name = p.full_name || "";
-document.getElementById("heroName").textContent = name || "";
-document.getElementById("heroTitle").textContent = p.title || "";
-document.getElementById("heroTagline").textContent = p.tagline || "";
-​const avatarImg = document.getElementById("avatarImg");
-if (p.avatar_url) {
-avatarImg.src = p.avatar_url;
-avatarImg.alt = name;
-avatarImg.style.display = "block";
-}
-​const storyContainer = document.getElementById("storyAvatarContainer");
-const hasStories = Array.isArray(stories) && stories.length > 0;
-const seenStories = localStorage.getItem("seen_story_latest");
-const latestStoryTime = hasStories ? stories[stories.length - 1].created_at : null;
-​if (hasStories) {
-storyContainer.classList.add("has-story");
-if (seenStories && latestStoryTime && seenStories >= latestStoryTime) {
-storyContainer.classList.add("seen");
-}
-storyContainer.addEventListener("click", () => openStoryModal(stories, p));
-} else {
-storyContainer.classList.remove("has-story");
-}
-​const actions = document.getElementById("heroActions");
-actions.innerHTML = "";
-if (p.resume_url) {
-const a = el("a", "btn btn-accent", "Download Resume");
-a.href = p.resume_url; a.target = "_blank"; a.rel = "noopener";
-actions.appendChild(a);
-}
-if (p.email) {
-const a = el("a", "btn", "Contact Me");
-a.href = "#contact";
-actions.appendChild(a);
-}
-​const social = document.getElementById("socialRow");
-social.innerHTML = "";
-[["github_url", "github"], ["linkedin_url", "linkedin"], ["twitter_url", "twitter"],
-["instagram_url", "instagram"], ["youtube_url", "youtube"]].forEach(([field, icon]) => {
-if (p[field]) {
-const a = el("a", "icon-btn", iconFor(icon));
-a.href = p[field]; a.target = "_blank"; a.rel = "noopener";
-a.title = icon;
-social.appendChild(a);
-}
-});
-}
-​function renderAbout(p) {
-const section = document.getElementById("about");
-if (!p.bio) { section.classList.add("hidden"); return; }
-document.getElementById("aboutBio").textContent = p.bio;
-section.classList.remove("hidden");
-}
-​function renderSkills(skills) {
-const section = document.getElementById("skills");
-const grid = document.getElementById("skillsGrid");
-grid.innerHTML = "";
-if (!skills.length) { section.classList.add("hidden"); return; }
-skills.forEach(s => {
-const level = Math.max(0, Math.min(100, Number(s.level) || 0));
-const card = el("div", "card skill-card");
-card.innerHTML = <div class="skill-name"><span>${escapeHtml(s.name)}</span><span>${level}%</span></div> <div class="skill-track"><div class="skill-fill" data-level="${level}" style="width:0%"></div></div>;
-grid.appendChild(card);
-});
-section.classList.remove("hidden");
-}
-​// ---------- Projects with Star Marking, Carousel Mode, & Auto Scroll ----------
-​function renderProjects() {
-const section = document.getElementById("projects");
-const container = document.getElementById("projectsContainer");
-container.innerHTML = "";
-​const list = activeProjects.filter(p => {
-if (currentProjectFilter === "starred") return Number(p.starred) === 1;
-return true;
-});
-​if (!list.length) {
-container.innerHTML = <p class="section-subtitle" style="grid-column: 1/-1;">No projects in this category.</p>;
-section.classList.remove("hidden");
-return;
-}
-​list.forEach((p, idx) => {
-const tags = (p.tech_stack || "").split(",").map(t => t.trim()).filter(Boolean);
-const isStarred = Number(p.starred) === 1;
-const card = el("div", "card project-card");
-​let html = "";
-if (isStarred) {
-html += <span class="project-badge-star">★ Starred</span>;
-}
-if (p.image_url) {
-html += <div class="project-image"><img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.title)}" loading="lazy" /></div>;
-}
-html += <div class="project-body"> <h3>${escapeHtml(p.title)}</h3> <p>${escapeHtml(p.description || "")}</p> <div class="tech-tags">${tags.map(t => <span class="badge">${escapeHtml(t)}</span>).join("")}</div> <div class="project-links"> ${p.live_url ? <a class="btn btn-accent" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live Demo</a>: ""} ${p.repo_url ?<a class="btn" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">Code</a> : ""} </div> </div>;
-card.innerHTML = html;
-container.appendChild(card);
-​// Trigger Apple Notification Left-to-Right Slide-in
-setTimeout(() => {
-card.classList.add("slide-in");
-}, 80 * idx);
-});
-​section.classList.remove("hidden");
-}
-​function initProjectsControls() {
-const container = document.getElementById("projectsContainer");
-const gridBtn = document.getElementById("viewGridBtn");
-const carouselBtn = document.getElementById("viewCarouselBtn");
-const autoScrollBtn = document.getElementById("autoScrollBtn");
-​document.querySelectorAll(".filter-pill").forEach(btn => {
-btn.addEventListener("click", () => {
-document.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active"));
-btn.classList.add("active");
-btn.classList.add("bounce-active");
-setTimeout(() => btn.classList.remove("bounce-active"), 400);
-​currentProjectFilter = btn.dataset.filter;
-renderProjects();
-});
-});
-​gridBtn.addEventListener("click", () => {
-isCarouselMode = false;
-container.className = "projects-grid";
-gridBtn.classList.add("active");
-carouselBtn.classList.remove("active");
-stopAutoScroll();
-renderProjects();
-});
-​carouselBtn.addEventListener("click", () => {
-isCarouselMode = true;
-container.className = "projects-carousel";
-carouselBtn.classList.add("active");
-gridBtn.classList.remove("active");
-renderProjects();
-});
-​autoScrollBtn.addEventListener("click", () => {
-if (autoScrollInterval) {
-stopAutoScroll();
-} else {
-if (!isCarouselMode) {
-carouselBtn.click();
-}
-startAutoScroll();
-}
-});
-}
-​function startAutoScroll() {
-const container = document.getElementById("projectsContainer");
-const autoScrollBtn = document.getElementById("autoScrollBtn");
-autoScrollBtn.classList.add("active");
-​autoScrollInterval = setInterval(() => {
-if (!container) return;
-if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
-container.scrollTo({ left: 0, behavior: "smooth" });
-} else {
-container.scrollBy({ left: 360, behavior: "smooth" });
-}
-}, 2800);
-}
-​function stopAutoScroll() {
-if (autoScrollInterval) {
-clearInterval(autoScrollInterval);
-autoScrollInterval = null;
-}
-const autoScrollBtn = document.getElementById("autoScrollBtn");
-if (autoScrollBtn) autoScrollBtn.classList.remove("active");
-}
-​function renderExperience(items) {
-const section = document.getElementById("experience");
-const timeline = document.getElementById("timeline");
-timeline.innerHTML = "";
-if (!items.length) { section.classList.add("hidden"); return; }
-items.forEach(x => {
-const period = [x.start_date, x.end_date].filter(Boolean).join(" – ");
-const typeLabel = x.type === "education" ? "Student" : "Work";
-const item = el("div", "card timeline-item");
-item.innerHTML = <div class="timeline-top"><span class="badge type-badge type-${escapeHtml(x.type || "work")}">${typeLabel}</span></div> <div class="role">${escapeHtml(x.role)}</div> ${x.organization ?<div class="org">{escapeHtml(x.organization)}</div>` : ""}
-${period ? `<div class="period">{escapeHtml(period)}</div>: ""} ${x.description ?<div class="desc">${escapeHtml(x.description)}</div>: ""};
-timeline.appendChild(item);
-});
-section.classList.remove("hidden");
-}
-​function renderContact(p) {
-const section = document.getElementById("contact");
-const grid = document.getElementById("contactGrid");
-grid.innerHTML = "";
-const items = [];
-if (p.email) items.push(["Email", p.email, "mailto:" + p.email]);
-if (p.location) items.push(["Location", p.location, "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.location)]);
-if (!items.length) { section.classList.add("hidden"); return; }
-items.forEach(([label, value, href]) => {
-const card = el("div", "card contact-card");
-const inner = <div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div>;
-const a = el("a", "contact-link", inner);
-a.href = href;
-if (href.startsWith("http")) { a.target = "_blank"; a.rel = "noopener"; }
-card.appendChild(a);
-grid.appendChild(card);
-});
-section.classList.remove("hidden");
-}
-​function renderFooter(p) {
-const year = new Date().getFullYear();
-const name = p.full_name || "";
-document.getElementById("footerText").textContent = name ? © ${year} ${name} : © ${year};
-}
-​// ---------- Fullscreen Instagram Reel / Story Player ----------
-​let storyIdx = 0;
-let storyTimer = null;
-let activeStoriesList = [];
-​function openStoryModal(stories, profile) {
-activeStoriesList = stories;
-storyIdx = 0;
-const modal = document.getElementById("storyModal");
-const authorImg = document.getElementById("storyModalAuthorImg");
-const authorName = document.getElementById("storyModalAuthorName");
-​authorImg.src = profile.avatar_url || "";
-authorName.textContent = profile.full_name || "Story";
-​modal.classList.add("active");
-modal.setAttribute("aria-hidden", "false");
-​buildStoryBars();
-playCurrentStory();
-​// Mark as seen
-const storyContainer = document.getElementById("storyAvatarContainer");
-storyContainer.classList.add("seen");
-if (stories.length) {
-localStorage.setItem("seen_story_latest", stories[stories.length - 1].created_at);
-}
-}
-​function closeStoryModal() {
-const modal = document.getElementById("storyModal");
-modal.classList.remove("active");
-modal.setAttribute("aria-hidden", "true");
-clearTimeout(storyTimer);
-const contentArea = document.getElementById("storyContentArea");
-contentArea.innerHTML = "";
-}
-​function buildStoryBars() {
-const wrap = document.getElementById("storyProgressBars");
-wrap.innerHTML = "";
-activeStoriesList.forEach((_, i) => {
-const bar = el("div", "story-progress-segment");
-bar.innerHTML = <div class="story-progress-segment-fill" id="storyFill_${i}"></div>;
-wrap.appendChild(bar);
-});
-}
-​function playCurrentStory() {
-clearTimeout(storyTimer);
-const story = activeStoriesList[storyIdx];
-if (!story) {
-closeStoryModal();
-return;
-}
-​const contentArea = document.getElementById("storyContentArea");
-const captionEl = document.getElementById("storyCaption");
-contentArea.innerHTML = "";
-captionEl.textContent = story.caption || "";
-​// Reset fills
-activeStoriesList.forEach((_, i) => {
-const f = document.getElementById(storyFill_${i});
-if (f) {
-if (i < storyIdx) f.style.width = "100%";
-else if (i === storyIdx) f.style.width = "0%";
-else f.style.width = "0%";
-}
-});
-​const isVideo = story.media_url.match(/.(mp4|webm|ogg|mov)$/i);
-const DURATION = isVideo ? 10000 : 5000;
-​if (isVideo) {
-const video = document.createElement("video");
-video.src = story.media_url;
-video.autoplay = true;
-video.playsInline = true;
-video.muted = false;
-contentArea.appendChild(video);
-} else {
-const img = document.createElement("img");
-img.src = story.media_url;
-contentArea.appendChild(img);
-}
-​const currentFill = document.getElementById(storyFill_${storyIdx});
-if (currentFill) {
-currentFill.style.transition = width ${DURATION}ms linear;
-void currentFill.offsetWidth;
-currentFill.style.width = "100%";
-}
-​storyTimer = setTimeout(() => {
-nextStory();
-}, DURATION);
-}
-​function nextStory() {
-if (storyIdx < activeStoriesList.length - 1) {
-storyIdx++;
-playCurrentStory();
-} else {
-closeStoryModal();
-}
-}
-​function prevStory() {
-if (storyIdx > 0) {
-storyIdx--;
-playCurrentStory();
-} else {
-playCurrentStory();
-}
-}
-​function initStoryListeners() {
-document.getElementById("storyCloseBtn").addEventListener("click", closeStoryModal);
-document.getElementById("storyBackdrop").addEventListener("click", closeStoryModal);
-document.getElementById("storyTapLeft").addEventListener("click", prevStory);
-document.getElementById("storyTapRight").addEventListener("click", nextStory);
-}
-​// ---------- Apple Physics Nav Link Spring Indicator ----------
-​function initNav() {
-const navLinks = document.getElementById("navLinks");
-const indicator = document.getElementById("navIndicator");
-const links = Array.from(document.querySelectorAll(".nav-link"));
-​function positionIndicator(link) {
-if (!link) return;
-const lRect = link.getBoundingClientRect();
-const pRect = navLinks.getBoundingClientRect();
-indicator.style.width = lRect.width + "px";
-indicator.style.height = lRect.height + "px";
-indicator.style.left = (lRect.left - pRect.left) + "px";
-indicator.style.top = (lRect.top - pRect.top) + "px";
-}
-​function setActive(link, animate) {
-links.forEach(l => l.classList.remove("active"));
-link.classList.add("active");
-positionIndicator(link);
-​if (animate) {
-link.classList.remove("bounce-active");
-void link.offsetWidth;
-link.classList.add("bounce-active");
-setTimeout(() => link.classList.remove("bounce-active"), 450);
-}
-}
-​links.forEach(link => {
-link.addEventListener("click", (e) => {
-setActive(link, true);
-});
-});
-​const sections = links.map(l => {
-const id = l.getAttribute("href").substring(1);
-return document.getElementById(id);
-}).filter(Boolean);
-​window.addEventListener("scroll", () => {
-const scrollPos = window.scrollY + 160;
-for (let i = sections.length - 1; i >= 0; i--) {
-const sec = sections[i];
-if (sec && !sec.classList.contains("hidden") && sec.offsetTop <= scrollPos) {
-const currentActive = links.find(l => l.getAttribute("href") === "#" + sec.id);
-if (currentActive && !currentActive.classList.contains("active")) {
-setActive(currentActive, false);
-}
-break;
-}
-}
-}, { passive: true });
-​const initialLink = links[0];
-if (initialLink) setActive(initialLink, false);
-window.addEventListener("resize", () => {
-const active = document.querySelector(".nav-link.active") || links[0];
-if (active) positionIndicator(active);
-});
-}
-​// ---------- Apple Continuous Scroll Observer ----------
-​function initScrollReveal() {
-const targets = document.querySelectorAll(".reveal");
-if (!("IntersectionObserver" in window) || !targets.length) {
-targets.forEach(t => t.classList.add("in-view"));
-return;
-}
-const io = new IntersectionObserver((entries) => {
-entries.forEach(entry => {
-if (entry.isIntersecting) {
-entry.target.classList.add("in-view");
-} else {
-// Re-trigger continuous bouncy reveals every time user scrolls
-entry.target.classList.remove("in-view");
-}
-});
-}, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-targets.forEach(t => io.observe(t));
-}
-​function initSkillsReveal() {
-const section = document.getElementById("skills");
-if (!section || !("IntersectionObserver" in window)) {
-document.querySelectorAll(".skill-fill").forEach(f => { f.style.width = f.dataset.level + "%"; });
-return;
-}
-const io = new IntersectionObserver((entries) => {
-entries.forEach(entry => {
-const fills = entry.target.querySelectorAll(".skill-fill");
-if (entry.isIntersecting) {
-fills.forEach((f, i) => setTimeout(() => { f.style.width = f.dataset.level + "%"; }, i * 90));
-} else {
-fills.forEach(f => { f.style.width = "0%"; });
-}
-});
-}, { threshold: 0.25 });
-io.observe(section);
-}
-​// ---------- Intro Animation Sequence ----------
-​function runIntro(profile) {
-const introScreen = document.getElementById("introScreen");
-const mainContent = document.getElementById("mainContent");
-const introName = document.getElementById("introName");
-const introTitle = document.getElementById("introTitle");
-const introAvatarImg = document.getElementById("introAvatarImg");
-​if (profile.full_name) introName.textContent = profile.full_name;
-if (profile.title) introTitle.textContent = profile.title;
-if (profile.avatar_url) {
-introAvatarImg.src = profile.avatar_url;
-introAvatarImg.style.display = "block";
-}
-​setTimeout(() => {
-introScreen.classList.add("intro-ready");
-setTimeout(() => {
-introScreen.classList.add("intro-zoom");
-revealMain(mainContent);
-setTimeout(() => { introScreen.style.display = "none"; }, 850);
-}, 550);
-}, 600);
-}
-​function revealMain(mainContent) {
-document.body.classList.remove("pre-reveal");
-mainContent.classList.add("revealed");
-initScrollReveal();
-initSkillsReveal();
-initNav();
-}
-​// ---------- Init Entry Point ----------
-​document.addEventListener("DOMContentLoaded", () => {
-fetchPortfolio().then(data => {
-portfolioData = data || {};
-const profile = portfolioData.profile || {};
-const stories = portfolioData.stories || [];
-activeProjects = portfolioData.projects || [];
-​renderHero(profile, stories);
-renderAbout(profile);
-renderSkills(portfolioData.skills || []);
-renderProjects();
-initProjectsControls();
-renderExperience(portfolioData.experience || []);
-renderContact(profile);
-renderFooter(profile);
-initStoryListeners();
-runIntro(profile);
-});
-});
+/**
+ * ============================================================================
+ * Apple iOS 18 / visionOS Spatial Glass Portfolio Engine (public/js/main.js)
+ * ============================================================================
+ * Matched 100% to your 6-table Cloudflare D1 Schema:
+ *  - profile (full_name, github_url, linkedin_url, twitter_url, instagram_url, youtube_url, etc.)
+ *  - skills (name, category, level, sort_order)
+ *  - projects (title, description, image_url, tech_stack, live_url, repo_url, starred)
+ *  - experience (type, role, organization, start_date, end_date, description)
+ *  - stories (id, media_url, created_at, caption)
+ * ============================================================================
+ */
+
+(() => {
+  "use strict";
+
+  // --------------------------------------------------------------------------
+  // Adjustable Configuration Parameters
+  // --------------------------------------------------------------------------
+  const CONFIG = {
+    API_ENDPOINT: "/api/portfolio",
+    STORY_IMAGE_DURATION_MS: 5000, // 5 seconds per image story
+    SEEN_STORIES_STORAGE_KEY: "portfolio_seen_stories_v1",
+    AUTO_SCROLL_SPEED_PX: 0.75,    // Carousel auto-scroll speed (pixels per frame)
+    INTRO_HOLD_MS: 650,            // Pause after SVG ring finishes before zoom
+    INTRO_CLEANUP_MS: 800          // Duration of zoom transition
+  };
+
+  // --------------------------------------------------------------------------
+  // Application State
+  // --------------------------------------------------------------------------
+  const state = {
+    profile: {},
+    skills: [],
+    projects: [],
+    experience: [],
+    stories: [],
+
+    // Projects UI state
+    activeFilter: "all",       // "all" | "starred" | "unstarred"
+    viewMode: "carousel",      // "carousel" | "grid"
+    autoScrollEnabled: true,
+    autoScrollPaused: false,
+    autoScrollRafId: null,
+
+    // Story Player state
+    storyIndex: 0,
+    storyMuted: false,
+    storyRafId: null,
+    storyStartTime: 0,
+    storyModalOpen: false,
+
+    // Scroll IntersectionObserver
+    scrollObserver: null
+  };
+
+  // --------------------------------------------------------------------------
+  // Utility Functions
+  // --------------------------------------------------------------------------
+
+  /**
+   * Escapes special HTML characters to prevent XSS injection.
+   */
+  function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  /**
+   * Converts an ISO timestamp or SQLite datetime string into a relative label (e.g., "4h ago").
+   */
+  function formatTimeAgo(dateInput) {
+    if (!dateInput) return "Just now";
+    const raw = String(dateInput).trim();
+    const parsed = typeof dateInput === "number"
+      ? (dateInput < 1e12 ? dateInput * 1000 : dateInput)
+      : Date.parse(raw.includes("T") ? raw : raw.replace(" ", "T") + "Z");
+
+    if (Number.isNaN(parsed)) return "Recently";
+
+    const diffSeconds = Math.max(0, Math.floor((Date.now() - parsed) / 1000));
+    if (diffSeconds < 60) return "Just now";
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${Math.floor(diffHours / 24)}d ago`;
+  }
+
+  /**
+   * Automatically determines if a story `media_url` is a video reel or an image.
+   * Works with file extensions (.mp4, .webm, .mov, .ogg) and data:video/* URLs.
+   */
+  function isVideoStory(story) {
+    if (!story || !story.media_url) return false;
+    const url = String(story.media_url).trim().toLowerCase();
+    if (url.startsWith("data:video/")) return true;
+    const cleanPath = url.split("?")[0].split("#")[0];
+    return /\.(mp4|webm|ogg|mov|m4v)$/.test(cleanPath);
+  }
+
+  /**
+   * Extracts social links from the `profile` table columns.
+   */
+  function extractSocialsFromProfile(profile) {
+    if (!profile) return [];
+    const mapping = [
+      { key: "github_url", label: "GitHub" },
+      { key: "linkedin_url", label: "LinkedIn" },
+      { key: "twitter_url", label: "Twitter / X" },
+      { key: "instagram_url", label: "Instagram" },
+      { key: "youtube_url", label: "YouTube" }
+    ];
+
+    const list = [];
+    mapping.forEach(({ key, label }) => {
+      const url = profile[key] ? String(profile[key]).trim() : "";
+      if (url) {
+        list.push({ platform: label, url });
+      }
+    });
+    return list;
+  }
+
+  // --------------------------------------------------------------------------
+  // 1. Spatial Intro Screen (#introScreen)
+  // --------------------------------------------------------------------------
+
+  function populateIntro(profile) {
+    const introName = document.getElementById("introName");
+    const introTitle = document.getElementById("introTitle");
+    const introAvatarImg = document.getElementById("introAvatarImg");
+
+    const displayName = profile.full_name || profile.name || "Welcome";
+    if (introName) introName.textContent = displayName;
+    if (introTitle) introTitle.textContent = profile.title || "";
+
+    if (introAvatarImg && profile.avatar_url) {
+      introAvatarImg.src = profile.avatar_url;
+      introAvatarImg.alt = displayName;
+      introAvatarImg.style.display = "block";
+    }
+  }
+
+  function finishIntro() {
+    const introScreen = document.getElementById("introScreen");
+    if (!introScreen) {
+      document.body.classList.remove("pre-reveal");
+      return;
+    }
+
+    introScreen.classList.add("intro-ready");
+
+    setTimeout(() => {
+      introScreen.classList.add("intro-zoom");
+      document.body.classList.remove("pre-reveal");
+
+      requestAnimationFrame(() => updateNavIndicator());
+
+      setTimeout(() => {
+        introScreen.classList.add("hidden");
+      }, CONFIG.INTRO_CLEANUP_MS);
+    }, CONFIG.INTRO_HOLD_MS);
+  }
+
+  // --------------------------------------------------------------------------
+  // 2. Dynamic Island Bouncy Navigation (initNav)
+  // --------------------------------------------------------------------------
+
+  function updateNavIndicator(targetLink) {
+    const navLinksContainer = document.getElementById("navLinks");
+    const indicator = document.getElementById("navIndicator");
+    if (!navLinksContainer || !indicator) return;
+
+    const activeLink =
+      targetLink ||
+      navLinksContainer.querySelector(".nav-link.active") ||
+      navLinksContainer.querySelector(".nav-link");
+
+    if (!activeLink) return;
+
+    const containerRect = navLinksContainer.getBoundingClientRect();
+    const linkRect = activeLink.getBoundingClientRect();
+
+    const left = linkRect.left - containerRect.left + navLinksContainer.scrollLeft;
+    const top = linkRect.top - containerRect.top;
+
+    indicator.classList.add("stretching");
+    indicator.style.width = `${linkRect.width}px`;
+    indicator.style.height = `${linkRect.height}px`;
+    indicator.style.left = `${left}px`;
+    indicator.style.top = `${top}px`;
+
+    clearTimeout(indicator._stretchTimer);
+    indicator._stretchTimer = setTimeout(() => {
+      indicator.classList.remove("stretching");
+    }, 320);
+  }
+
+  function initNav() {
+    const navLinksContainer = document.getElementById("navLinks");
+    if (!navLinksContainer) return;
+
+    const links = Array.from(navLinksContainer.querySelectorAll(".nav-link"));
+    if (!links.length) return;
+
+    links[0].classList.add("active");
+    requestAnimationFrame(() => updateNavIndicator(links[0]));
+
+    links.forEach((link) => {
+      link.addEventListener("click", () => {
+        links.forEach((l) => l.classList.remove("active", "bounce"));
+        void link.offsetWidth; // Reflow to restart keyframe animation
+        link.classList.add("active", "bounce");
+        updateNavIndicator(link);
+      });
+    });
+
+    window.addEventListener("resize", () => updateNavIndicator());
+
+    const sectionIds = links
+      .map((link) => link.getAttribute("href"))
+      .filter((href) => href && href.startsWith("#"))
+      .map((href) => href.slice(1));
+
+    const spyObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            const matchingLink = links.find(
+              (link) => link.getAttribute("href") === `#${id}`
+            );
+            if (matchingLink && !matchingLink.classList.contains("active")) {
+              links.forEach((l) => l.classList.remove("active"));
+              matchingLink.classList.add("active");
+              updateNavIndicator(matchingLink);
+            }
+          }
+        });
+      },
+      { rootMargin: "-35% 0px -55% 0px", threshold: 0.05 }
+    );
+
+    sectionIds.forEach((id) => {
+      const sectionEl = document.getElementById(id);
+      if (sectionEl) spyObserver.observe(sectionEl);
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 3. Hero, Profile, About & Contact Rendering
+  // --------------------------------------------------------------------------
+
+  function renderProfile(profile) {
+    const brandText = document.getElementById("brandText");
+    const heroName = document.getElementById("heroName");
+    const heroTitle = document.getElementById("heroTitle");
+    const heroTagline = document.getElementById("heroTagline");
+    const avatarImg = document.getElementById("avatarImg");
+    const avatarFallback = document.getElementById("avatarFallback");
+    const heroActions = document.getElementById("heroActions");
+    const socialRow = document.getElementById("socialRow");
+    const aboutSection = document.getElementById("about");
+    const aboutBio = document.getElementById("aboutBio");
+    const contactSection = document.getElementById("contact");
+    const contactGrid = document.getElementById("contactGrid");
+    const footerText = document.getElementById("footerText");
+
+    const fullName = profile.full_name || profile.name || "Portfolio";
+    document.title = `${fullName} — Portfolio`;
+
+    if (brandText) brandText.textContent = fullName;
+    if (heroName) heroName.textContent = fullName;
+    if (heroTitle) heroTitle.textContent = profile.title || "";
+    if (heroTagline) heroTagline.textContent = profile.tagline || "";
+
+    if (avatarImg && profile.avatar_url) {
+      avatarImg.src = profile.avatar_url;
+      avatarImg.alt = fullName;
+      avatarImg.style.display = "block";
+      if (avatarFallback) avatarFallback.style.display = "none";
+    }
+
+    // Hero Call-to-Action Buttons
+    if (heroActions) {
+      const actionsHtml = [
+        `<a href="#projects" class="btn btn-accent">View Projects</a>`
+      ];
+      if (profile.resume_url) {
+        actionsHtml.push(
+          `<a href="${escapeHtml(profile.resume_url)}" class="btn" target="_blank" rel="noopener noreferrer">Resume ↗</a>`
+        );
+      }
+      if (profile.email) {
+        actionsHtml.push(
+          `<a href="mailto:${escapeHtml(profile.email)}" class="btn">Get In Touch</a>`
+        );
+      }
+      heroActions.innerHTML = actionsHtml.join("");
+    }
+
+    // Social Links extracted from `profile` columns
+    const socials = extractSocialsFromProfile(profile);
+    if (socialRow) {
+      socialRow.innerHTML = socials
+        .map(
+          (s) => `
+          <a href="${escapeHtml(s.url)}" class="btn" target="_blank" rel="noopener noreferrer">
+            ${escapeHtml(s.platform)}
+          </a>`
+        )
+        .join("");
+    }
+
+    // About Section
+    if (aboutSection && aboutBio && profile.bio) {
+      aboutBio.textContent = profile.bio;
+      aboutSection.classList.remove("hidden");
+    }
+
+    // Contact Section
+    if (contactSection && contactGrid) {
+      const cards = [];
+      if (profile.email) {
+        cards.push({
+          label: "Email",
+          value: profile.email,
+          href: `mailto:${profile.email}`
+        });
+      }
+      if (profile.phone) {
+        cards.push({
+          label: "Phone",
+          value: profile.phone,
+          href: `tel:${profile.phone}`
+        });
+      }
+      if (profile.location) {
+        cards.push({
+          label: "Location",
+          value: profile.location,
+          href: null
+        });
+      }
+      socials.forEach((s) => {
+        cards.push({
+          label: s.platform,
+          value: s.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""),
+          href: s.url
+        });
+      });
+
+      if (cards.length > 0) {
+        contactGrid.innerHTML = cards
+          .map((c) => {
+            const inner = `
+              <div class="label">${escapeHtml(c.label)}</div>
+              <div class="value">${escapeHtml(c.value)}</div>
+            `;
+            return c.href
+              ? `<a href="${escapeHtml(c.href)}" target="_blank" rel="noopener noreferrer" class="card contact-card scroll-item-ltr">${inner}</a>`
+              : `<div class="card contact-card scroll-item-ltr">${inner}</div>`;
+          })
+          .join("");
+        contactSection.classList.remove("hidden");
+      }
+    }
+
+    // Footer
+    if (footerText) {
+      const year = new Date().getFullYear();
+      footerText.textContent = `© ${year} ${fullName}. All rights reserved.`;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 4. Instagram-Style 24h Story Ring & Video Reels Modal (initStories)
+  // --------------------------------------------------------------------------
+
+  function getSeenStoryIds() {
+    try {
+      const raw = localStorage.getItem(CONFIG.SEEN_STORIES_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function markStorySeen(storyId) {
+    if (storyId === undefined || storyId === null) return;
+    const seen = new Set(getSeenStoryIds());
+    seen.add(String(storyId));
+    try {
+      localStorage.setItem(
+        CONFIG.SEEN_STORIES_STORAGE_KEY,
+        JSON.stringify(Array.from(seen))
+      );
+    } catch {
+      // Ignore storage errors
+    }
+    updateAvatarStoryRingState();
+  }
+
+  function updateAvatarStoryRingState() {
+    const avatarFrame = document.getElementById("avatarFrame");
+    const storyBadge = document.getElementById("storyBadge");
+    if (!avatarFrame) return;
+
+    const activeStories = state.stories;
+    if (!Array.isArray(activeStories) || activeStories.length === 0) {
+      avatarFrame.classList.remove("has-story", "story-unseen", "story-seen");
+      if (storyBadge) storyBadge.classList.add("hidden");
+      return;
+    }
+
+    const seenIds = new Set(getSeenStoryIds());
+    const allSeen = activeStories.every((s) => seenIds.has(String(s.id)));
+
+    avatarFrame.classList.add("has-story");
+    avatarFrame.classList.toggle("story-unseen", !allSeen);
+    avatarFrame.classList.toggle("story-seen", allSeen);
+
+    if (storyBadge) {
+      storyBadge.classList.remove("hidden");
+      storyBadge.textContent = allSeen ? "REPLAY" : "STORY";
+    }
+  }
+
+  function initStories(stories) {
+    const cutoffMs = Date.now() - 24 * 60 * 60 * 1000;
+    state.stories = (Array.isArray(stories) ? stories : []).filter((s) => {
+      if (!s || !s.media_url) return false;
+      if (!s.created_at) return true;
+      const raw = String(s.created_at).trim();
+      const ts = typeof s.created_at === "number"
+        ? (s.created_at < 1e12 ? s.created_at * 1000 : s.created_at)
+        : Date.parse(raw.includes("T") ? raw : raw.replace(" ", "T") + "Z");
+      return Number.isNaN(ts) ? true : ts >= cutoffMs;
+    });
+
+    updateAvatarStoryRingState();
+
+    const avatarFrame = document.getElementById("avatarFrame");
+    const storyModal = document.getElementById("storyModal");
+    const storyBackdrop = document.getElementById("storyBackdrop");
+    const storyCloseBtn = document.getElementById("storyCloseBtn");
+    const storyMuteBtn = document.getElementById("storyMuteBtn");
+    const storyPrevZone = document.getElementById("storyPrevZone");
+    const storyNextZone = document.getElementById("storyNextZone");
+
+    if (avatarFrame) {
+      avatarFrame.addEventListener("click", () => {
+        if (!state.stories.length) return;
+        const seenIds = new Set(getSeenStoryIds());
+        const firstUnseenIdx = state.stories.findIndex(
+          (s) => !seenIds.has(String(s.id))
+        );
+        openStoryModal(firstUnseenIdx >= 0 ? firstUnseenIdx : 0);
+      });
+    }
+
+    if (storyCloseBtn) storyCloseBtn.addEventListener("click", closeStoryModal);
+    if (storyBackdrop) storyBackdrop.addEventListener("click", closeStoryModal);
+    if (storyPrevZone) storyPrevZone.addEventListener("click", () => stepStory(-1));
+    if (storyNextZone) storyNextZone.addEventListener("click", () => stepStory(1));
+
+    if (storyMuteBtn) {
+      storyMuteBtn.addEventListener("click", () => {
+        const videoEl = document.getElementById("storyVideoEl");
+        state.storyMuted = !state.storyMuted;
+        if (videoEl) videoEl.muted = state.storyMuted;
+        updateMuteButtonUI();
+      });
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (!state.storyModalOpen) return;
+      if (e.key === "Escape") closeStoryModal();
+      if (e.key === "ArrowRight") stepStory(1);
+      if (e.key === "ArrowLeft") stepStory(-1);
+    });
+
+    if (storyModal) {
+      storyModal.addEventListener("contextmenu", (e) => e.preventDefault());
+    }
+  }
+
+  function updateMuteButtonUI() {
+    const muteIcon = document.getElementById("storyMuteIcon");
+    if (muteIcon) {
+      muteIcon.textContent = state.storyMuted ? "🔇" : "🔊";
+    }
+  }
+
+  function openStoryModal(startIndex = 0) {
+    const storyModal = document.getElementById("storyModal");
+    const progressRow = document.getElementById("storyProgressRow");
+    const storyUserAvatar = document.getElementById("storyUserAvatar");
+    const storyUserName = document.getElementById("storyUserName");
+
+    if (!storyModal || !state.stories.length) return;
+
+    state.storyModalOpen = true;
+    storyModal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+
+    if (storyUserName) {
+      storyUserName.textContent =
+        state.profile.full_name || state.profile.name || "Story";
+    }
+    if (storyUserAvatar) {
+      if (state.profile.avatar_url) {
+        storyUserAvatar.src = state.profile.avatar_url;
+        storyUserAvatar.style.display = "block";
+      } else {
+        storyUserAvatar.style.display = "none";
+      }
+    }
+
+    if (progressRow) {
+      progressRow.innerHTML = state.stories
+        .map(
+          (_, idx) => `
+          <div class="story-seg">
+            <div class="story-seg-fill" id="storySegFill-${idx}"></div>
+          </div>`
+        )
+        .join("");
+    }
+
+    showStoryAtIndex(startIndex);
+  }
+
+  function stopCurrentStoryPlayback() {
+    if (state.storyRafId) {
+      cancelAnimationFrame(state.storyRafId);
+      state.storyRafId = null;
+    }
+    const videoEl = document.getElementById("storyVideoEl");
+    if (videoEl) {
+      videoEl.pause();
+      videoEl.onended = null;
+      videoEl.ontimeupdate = null;
+      videoEl.removeAttribute("src");
+      videoEl.load();
+    }
+  }
+
+  function closeStoryModal() {
+    stopCurrentStoryPlayback();
+    state.storyModalOpen = false;
+    const storyModal = document.getElementById("storyModal");
+    if (storyModal) storyModal.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+
+  function stepStory(direction) {
+    const nextIndex = state.storyIndex + direction;
+    if (nextIndex < 0) {
+      showStoryAtIndex(0);
+    } else if (nextIndex >= state.stories.length) {
+      closeStoryModal();
+    } else {
+      showStoryAtIndex(nextIndex);
+    }
+  }
+
+  function setSegmentFill(index, percentage) {
+    const el = document.getElementById(`storySegFill-${index}`);
+    if (el) {
+      el.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
+    }
+  }
+
+  function showStoryAtIndex(index) {
+    stopCurrentStoryPlayback();
+    state.storyIndex = index;
+
+    const story = state.stories[index];
+    if (!story) {
+      closeStoryModal();
+      return;
+    }
+
+    state.stories.forEach((_, idx) => {
+      setSegmentFill(idx, idx < index ? 100 : 0);
+    });
+
+    markStorySeen(story.id ?? index);
+
+    const timeAgoEl = document.getElementById("storyTimeAgo");
+    if (timeAgoEl) timeAgoEl.textContent = formatTimeAgo(story.created_at);
+
+    const captionBar = document.getElementById("storyCaptionBar");
+    const captionText = document.getElementById("storyCaptionText");
+    if (captionBar && captionText) {
+      if (story.caption && String(story.caption).trim()) {
+        captionText.textContent = story.caption;
+        captionBar.classList.remove("hidden");
+      } else {
+        captionText.textContent = "";
+        captionBar.classList.add("hidden");
+      }
+    }
+
+    const imgEl = document.getElementById("storyImgEl");
+    const videoEl = document.getElementById("storyVideoEl");
+    const muteBtn = document.getElementById("storyMuteBtn");
+
+    if (isVideoStory(story)) {
+      if (imgEl) imgEl.classList.add("hidden");
+      if (muteBtn) muteBtn.classList.remove("hidden");
+
+      if (videoEl) {
+        videoEl.classList.remove("hidden");
+        videoEl.src = story.media_url;
+        videoEl.muted = state.storyMuted;
+        updateMuteButtonUI();
+
+        videoEl.ontimeupdate = () => {
+          if (videoEl.duration && Number.isFinite(videoEl.duration)) {
+            const pct = (videoEl.currentTime / videoEl.duration) * 100;
+            setSegmentFill(index, pct);
+          }
+        };
+
+        videoEl.onended = () => {
+          setSegmentFill(index, 100);
+          stepStory(1);
+        };
+
+        const playPromise = videoEl.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            state.storyMuted = true;
+            videoEl.muted = true;
+            updateMuteButtonUI();
+            videoEl.play().catch(() => {});
+          });
+        }
+      }
+    } else {
+      if (videoEl) videoEl.classList.add("hidden");
+      if (muteBtn) muteBtn.classList.add("hidden");
+
+      if (imgEl) {
+        imgEl.classList.remove("hidden");
+        imgEl.src = story.media_url;
+      }
+
+      state.storyStartTime = performance.now();
+      const tick = (now) => {
+        if (!state.storyModalOpen || state.storyIndex !== index) return;
+        const elapsed = now - state.storyStartTime;
+        const pct = (elapsed / CONFIG.STORY_IMAGE_DURATION_MS) * 100;
+        setSegmentFill(index, pct);
+
+        if (elapsed >= CONFIG.STORY_IMAGE_DURATION_MS) {
+          stepStory(1);
+        } else {
+          state.storyRafId = requestAnimationFrame(tick);
+        }
+      };
+      state.storyRafId = requestAnimationFrame(tick);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 5. Skills & Experience Rendering (Mapped to `category`, `start_date`, `end_date`)
+  // --------------------------------------------------------------------------
+
+  function renderSkills(skills) {
+    const skillsSection = document.getElementById("skills");
+    const skillsGrid = document.getElementById("skillsGrid");
+    if (!skillsSection || !skillsGrid || !Array.isArray(skills) || !skills.length) {
+      return;
+    }
+
+    skillsGrid.innerHTML = skills
+      .map((skill) => {
+        const level = Math.max(0, Math.min(100, Number(skill.level ?? 80)));
+        const categoryTag = skill.category
+          ? `<span class="badge" style="margin-bottom:8px;">${escapeHtml(skill.category)}</span>`
+          : "";
+        return `
+          <div class="card skill-card scroll-item-ltr">
+            ${categoryTag}
+            <div class="skill-name">
+              <span>${escapeHtml(skill.name)}</span>
+              <span>${level}%</span>
+            </div>
+            <div class="skill-track">
+              <div class="skill-fill" data-level="${level}"></div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    skillsSection.classList.remove("hidden");
+  }
+
+  function renderExperience(experience) {
+    const expSection = document.getElementById("experience");
+    const timeline = document.getElementById("timeline");
+    if (!expSection || !timeline || !Array.isArray(experience) || !experience.length) {
+      return;
+    }
+
+    timeline.innerHTML = experience
+      .map((item) => {
+        const isEdu = String(item.type || "").toLowerCase() === "education";
+        const badgeLabel = isEdu ? "Education" : "Work Experience";
+
+        // Format `start_date` and `end_date` from your `experience` table
+        let periodText = item.period || "";
+        if (!periodText && (item.start_date || item.end_date)) {
+          const start = item.start_date || "";
+          const end = item.end_date || "Present";
+          periodText = start ? `${start} — ${end}` : end;
+        }
+
+        return `
+          <div class="card timeline-item scroll-item-ltr">
+            <div class="timeline-top">
+              <span class="badge type-badge ${isEdu ? "type-education" : ""}">${badgeLabel}</span>
+            </div>
+            <div class="role">${escapeHtml(item.role)}</div>
+            <div class="org">${escapeHtml(item.organization || "")}</div>
+            ${periodText ? `<div class="period">${escapeHtml(periodText)}</div>` : ""}
+            ${item.description ? `<div class="desc">${escapeHtml(item.description)}</div>` : ""}
+          </div>
+        `;
+      })
+      .join("");
+
+    expSection.classList.remove("hidden");
+  }
+
+  // --------------------------------------------------------------------------
+  // 6. Projects Showcase: Starred Spotlight, Filter, View Switch & Auto-Scroll
+  // --------------------------------------------------------------------------
+
+  function isProjectStarred(project) {
+    return (
+      project &&
+      (project.starred === 1 ||
+        project.starred === true ||
+        project.starred === "1")
+    );
+  }
+
+  function buildProjectCardHtml(project) {
+    const starred = isProjectStarred(project);
+    const tags = Array.isArray(project.tech_stack)
+      ? project.tech_stack
+      : String(project.tech_stack || "")
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
+
+    return `
+      <article class="card project-card scroll-item-ltr">
+        ${
+          starred
+            ? `<div class="project-star-ribbon" title="Popular Starred Project">★ Popular</div>`
+            : ""
+        }
+        ${
+          project.image_url
+            ? `<div class="project-image">
+                 <img src="${escapeHtml(project.image_url)}" alt="${escapeHtml(project.title)}" loading="lazy" />
+               </div>`
+            : ""
+        }
+        <div class="project-body">
+          <h3>${escapeHtml(project.title || "Untitled Project")}</h3>
+          <p>${escapeHtml(project.description || "")}</p>
+          ${
+            tags.length
+              ? `<div class="tech-tags">
+                   ${tags.map((t) => `<span class="badge">${escapeHtml(t)}</span>`).join("")}
+                 </div>`
+              : ""
+          }
+          <div class="project-links">
+            ${
+              project.live_url
+                ? `<a href="${escapeHtml(project.live_url)}" class="btn btn-accent" target="_blank" rel="noopener noreferrer">Live Demo ↗</a>`
+                : ""
+            }
+            ${
+              project.repo_url
+                ? `<a href="${escapeHtml(project.repo_url)}" class="btn" target="_blank" rel="noopener noreferrer">GitHub</a>`
+                : ""
+            }
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderStarredSpotlight(projects) {
+    const spotlightSection = document.getElementById("starredSpotlight");
+    const spotlightGrid = document.getElementById("starredShowcaseGrid");
+    if (!spotlightSection || !spotlightGrid) return;
+
+    const starredList = (Array.isArray(projects) ? projects : []).filter(isProjectStarred);
+    if (!starredList.length) {
+      spotlightSection.classList.add("hidden");
+      return;
+    }
+
+    spotlightGrid.innerHTML = starredList.map(buildProjectCardHtml).join("");
+    spotlightSection.classList.remove("hidden");
+  }
+
+  function renderProjectsList() {
+    const projectsSection = document.getElementById("projects");
+    const projectsGrid = document.getElementById("projectsGrid");
+    if (!projectsSection || !projectsGrid) return;
+
+    if (!Array.isArray(state.projects) || !state.projects.length) {
+      projectsSection.classList.add("hidden");
+      return;
+    }
+
+    projectsSection.classList.remove("hidden");
+
+    const filtered = state.projects.filter((p) => {
+      if (state.activeFilter === "starred") return isProjectStarred(p);
+      if (state.activeFilter === "unstarred") return !isProjectStarred(p);
+      return true;
+    });
+
+    if (!filtered.length) {
+      projectsGrid.innerHTML = `<div class="empty-note">No projects found in this filter.</div>`;
+      return;
+    }
+
+    projectsGrid.innerHTML = filtered.map(buildProjectCardHtml).join("");
+    observeScrollItems();
+  }
+
+  function updateAutoScrollButtonUI() {
+    const autoScrollBtn = document.getElementById("autoScrollBtn");
+    const autoScrollIcon = document.getElementById("autoScrollIcon");
+    if (!autoScrollBtn || !autoScrollIcon) return;
+
+    const isActive = state.autoScrollEnabled && state.viewMode === "carousel";
+    autoScrollBtn.classList.toggle("active", isActive);
+
+    if (isActive) {
+      autoScrollIcon.innerHTML = `<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>`;
+    } else {
+      autoScrollIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+    }
+  }
+
+  function startInfiniteAutoScroll() {
+    if (state.autoScrollRafId) {
+      cancelAnimationFrame(state.autoScrollRafId);
+    }
+
+    const track = document.getElementById("projectsGrid");
+    if (!track) return;
+
+    const step = () => {
+      if (
+        state.autoScrollEnabled &&
+        state.viewMode === "carousel" &&
+        !state.autoScrollPaused
+      ) {
+        const maxScroll = track.scrollWidth - track.clientWidth;
+        if (maxScroll > 4) {
+          track.scrollLeft += CONFIG.AUTO_SCROLL_SPEED_PX;
+          if (track.scrollLeft >= maxScroll - 1) {
+            track.scrollLeft = 0;
+          }
+        }
+      }
+      state.autoScrollRafId = requestAnimationFrame(step);
+    };
+
+    state.autoScrollRafId = requestAnimationFrame(step);
+  }
+
+  function initProjectControls() {
+    const filterGroup = document.getElementById("projectFilters");
+    const autoScrollBtn = document.getElementById("autoScrollBtn");
+    const carouselViewBtn = document.getElementById("carouselViewBtn");
+    const gridViewBtn = document.getElementById("gridViewBtn");
+    const viewport = document.getElementById("projectsViewport");
+    const track = document.getElementById("projectsGrid");
+
+    if (filterGroup) {
+      const filterBtns = Array.from(filterGroup.querySelectorAll(".filter-btn"));
+      filterBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          filterBtns.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.activeFilter = btn.dataset.filter || "all";
+          if (track) track.scrollLeft = 0;
+          renderProjectsList();
+        });
+      });
+    }
+
+    if (carouselViewBtn && gridViewBtn && viewport) {
+      carouselViewBtn.addEventListener("click", () => {
+        state.viewMode = "carousel";
+        viewport.classList.add("is-carousel");
+        viewport.classList.remove("is-grid");
+        carouselViewBtn.classList.add("active");
+        gridViewBtn.classList.remove("active");
+        updateAutoScrollButtonUI();
+      });
+
+      gridViewBtn.addEventListener("click", () => {
+        state.viewMode = "grid";
+        viewport.classList.add("is-grid");
+        viewport.classList.remove("is-carousel");
+        gridViewBtn.classList.add("active");
+        carouselViewBtn.classList.remove("active");
+        updateAutoScrollButtonUI();
+      });
+    }
+
+    if (autoScrollBtn) {
+      autoScrollBtn.addEventListener("click", () => {
+        state.autoScrollEnabled = !state.autoScrollEnabled;
+        if (state.autoScrollEnabled && state.viewMode !== "carousel" && carouselViewBtn) {
+          carouselViewBtn.click();
+        } else {
+          updateAutoScrollButtonUI();
+        }
+      });
+    }
+
+    if (track) {
+      track.addEventListener("mouseenter", () => {
+        state.autoScrollPaused = true;
+      });
+      track.addEventListener("mouseleave", () => {
+        state.autoScrollPaused = false;
+      });
+      track.addEventListener(
+        "touchstart",
+        () => {
+          state.autoScrollPaused = true;
+        },
+        { passive: true }
+      );
+      track.addEventListener(
+        "touchend",
+        () => {
+          setTimeout(() => {
+            state.autoScrollPaused = false;
+          }, 1200);
+        },
+        { passive: true }
+      );
+    }
+
+    updateAutoScrollButtonUI();
+    startInfiniteAutoScroll();
+  }
+
+  // --------------------------------------------------------------------------
+  // 7. Apple Notification Scroll Reveal & Skill Bar Fill Animations
+  // --------------------------------------------------------------------------
+
+  function observeScrollItems() {
+    if (!state.scrollObserver) return;
+    const elements = document.querySelectorAll(".scroll-anim, .scroll-item-ltr");
+    elements.forEach((el) => state.scrollObserver.observe(el));
+  }
+
+  function initScrollAnimations() {
+    state.scrollObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const el = entry.target;
+          if (entry.isIntersecting) {
+            el.classList.add("in-view");
+            const skillFills = el.querySelectorAll(".skill-fill[data-level]");
+            skillFills.forEach((fill) => {
+              fill.style.width = `${fill.dataset.level}%`;
+            });
+          } else {
+            el.classList.remove("in-view");
+            const skillFills = el.querySelectorAll(".skill-fill[data-level]");
+            skillFills.forEach((fill) => {
+              fill.style.width = "0%";
+            });
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    observeScrollItems();
+  }
+
+  // --------------------------------------------------------------------------
+  // 8. Main Application Bootstrapper
+  // --------------------------------------------------------------------------
+
+  async function loadPortfolio() {
+    initNav();
+    initProjectControls();
+    initScrollAnimations();
+
+    try {
+      const response = await fetch(CONFIG.API_ENDPOINT, {
+        headers: { Accept: "application/json" }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      state.profile = data.profile || {};
+      state.skills = Array.isArray(data.skills) ? data.skills : [];
+      state.projects = Array.isArray(data.projects) ? data.projects : [];
+      state.experience = Array.isArray(data.experience) ? data.experience : [];
+
+      populateIntro(state.profile);
+      renderProfile(state.profile);
+      renderStarredSpotlight(state.projects);
+      renderSkills(state.skills);
+      renderProjectsList();
+      renderExperience(state.experience);
+      initStories(data.stories || []);
+
+      observeScrollItems();
+    } catch (err) {
+      console.warn("Could not load /api/portfolio:", err.message);
+      populateIntro({ full_name: "Portfolio" });
+      renderProfile({ full_name: "Portfolio" });
+      observeScrollItems();
+    } finally {
+      finishIntro();
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadPortfolio);
+  } else {
+    loadPortfolio();
+  }
 })();

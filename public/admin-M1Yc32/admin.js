@@ -1,11 +1,20 @@
 (function () {
   "use strict";
 
-  const api = (path, opts) => fetch("/api/admin" + path, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
+  // Updated api helper to include the Bearer token from localStorage
+  const api = (path, opts = {}) => {
+    const token = localStorage.getItem("admin_token") || "";
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": "Bearer " + token } : {}),
+      ...(opts.headers || {})
+    };
+    return fetch("/api/admin" + path, {
+      credentials: "include",
+      ...opts,
+      headers,
+    });
+  };
 
   const loginWrap = document.getElementById("loginWrap");
   const adminShell = document.getElementById("adminShell");
@@ -55,7 +64,12 @@
       const res = await api("/login", { method: "POST", body: JSON.stringify({ password }) });
       const data = await res.json();
       if (res.ok) {
+        // SAVE THE TOKEN PROPERLY HERE
+        if (data.token) {
+          localStorage.setItem("admin_token", data.token);
+        }
         document.getElementById("loginPassword").value = "";
+        errorBox.textContent = "";
         showDashboard();
       } else {
         errorBox.textContent = data.error || "Login failed";
@@ -66,7 +80,10 @@
   });
 
   document.getElementById("logoutBtn").addEventListener("click", async () => {
-    await api("/logout", { method: "POST" });
+    try {
+      await api("/logout", { method: "POST" });
+    } catch (e) {}
+    localStorage.removeItem("admin_token");
     showLogin();
   });
 
@@ -80,9 +97,6 @@
   });
 
   // ---------- Bouncy sliding indicator behind the active admin tab ----------
-  // getBoundingClientRect() on a display:none element returns all zeros, so
-  // this has to run AFTER the dashboard becomes visible, not at page load.
-
   let adminTabListenersBound = false;
   function setupAdminTabIndicator() {
     const tabsBox = document.getElementById("adminTabs");
@@ -117,7 +131,7 @@
     positionIndicator(document.querySelector(".admin-tab.active") || tabs[0]);
   }
 
-  // --- Dual Preview Helper (Current Selected + Last Saved) ---
+  // --- Dual Preview Helper ---
   function renderDualPreviews(containerId, currentUrl, savedUrl) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -334,6 +348,12 @@
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "/api/admin/upload");
       xhr.withCredentials = true;
+      
+      // Attach the Bearer token to XHR requests too!
+      const token = localStorage.getItem("admin_token");
+      if (token) {
+        xhr.setRequestHeader("Authorization", "Bearer " + token);
+      }
 
       xhr.upload.onprogress = (ev) => {
         if (ev.lengthComputable && fill) {
@@ -350,7 +370,7 @@
           if (targetId === "avatarUrlInput") renderDualPreviews(previewId, data.url, savedAvatarUrl);
           else if (targetId === "projectImageUrlInput") renderDualPreviews(previewId, data.url, savedProjectImgUrl);
           else renderDualPreviews(previewId, data.url, "");
-          showToast("Upload completed successfully!", "success");
+      showToast("Upload completed successfully!", "success");
         } else {
           let msg = "Upload failed";
           try { msg = JSON.parse(xhr.responseText).error || msg; } catch (err) {}

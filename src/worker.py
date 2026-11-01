@@ -63,7 +63,7 @@ def now_iso():
 # Authentication (Bearer Token via itsdangerous)
 # -----------------------------------------------------------------------------
 def get_admin_secret():
-    secret = getattr(env(), "ADMIN_PASSWORD_HASH", None)
+    secret = getattr(env(), "ADMIN_PASSWORD", None)
     if secret and str(secret).strip():
         return str(secret).strip()
     return "admin123"  # Fallback for local testing

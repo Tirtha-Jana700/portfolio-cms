@@ -482,7 +482,7 @@
     if (isVideoUrl(story.media_url)) {
       const video = document.createElement("video");
       video.src = story.media_url;
-      video.muted = true;
+      video.muted = false;
       video.playsInline = true;
       video.setAttribute("webkit-playsinline", "true");
       video.setAttribute("preload", "auto");

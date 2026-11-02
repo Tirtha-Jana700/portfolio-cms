@@ -13,9 +13,6 @@
     grid: '<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
     carousel: '<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><rect x="2" y="7" width="5" height="10" rx="1.5"/><rect x="9.5" y="4" width="5" height="16" rx="1.5"/><rect x="17" y="7" width="5" height="10" rx="1.5"/></svg>',
   };
-  const MUTE_ICON = '&#128263;';
-  const UNMUTE_ICON = '&#128266;';
-
   function iconFor(key) { return ICONS[key] || ICONS.website; }
 
   function el(tag, cls, html) {
@@ -342,6 +339,9 @@
     const sections = links.map(l => document.getElementById(l.getAttribute("href").substring(1))).filter(Boolean);
 
     window.addEventListener("scroll", () => {
+      // Near/at the bottom of the page, force-activate the last visible
+      // section's link — otherwise its offset math can never satisfy the
+      // threshold below if there isn't enough scroll room past its top.
       const atBottom = (window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 4);
       if (atBottom) {
         for (let i = sections.length - 1; i >= 0; i--) {
@@ -385,7 +385,6 @@
   let storyDuration = 5000;
   let storyPaused = false;
   let storyPausedAt = 0;
-  let storyMuted = true;
   const IMAGE_STORY_MS = 5000;
 
   function getSeenStoryIds() {
@@ -412,6 +411,9 @@
     const wrap = document.getElementById("storyMediaWrap");
     const video = wrap.querySelector("video");
     if (video) {
+      // Pause AND detach the source before removing — this is what actually
+      // guarantees no background audio/video keeps playing, rather than
+      // just hiding the element.
       video.pause();
       video.removeAttribute("src");
       try { video.load(); } catch (e) {}
@@ -476,18 +478,15 @@
     else { captionEl.classList.add("hidden"); }
 
     const wrap = document.getElementById("storyMediaWrap");
-    const muteBtn = document.getElementById("storyMuteBtn");
 
     if (isVideoUrl(story.media_url)) {
       const video = document.createElement("video");
       video.src = story.media_url;
-      video.muted = storyMuted;
+      video.muted = true;
       video.playsInline = true;
       video.setAttribute("webkit-playsinline", "true");
       video.setAttribute("preload", "auto");
       wrap.appendChild(video);
-      muteBtn.classList.remove("hidden");
-      muteBtn.innerHTML = storyMuted ? MUTE_ICON : UNMUTE_ICON;
       video.addEventListener("loadedmetadata", () => {
         storyDuration = (video.duration && isFinite(video.duration)) ? video.duration * 1000 : IMAGE_STORY_MS;
         startProgress(index);
@@ -499,7 +498,6 @@
       img.src = story.media_url;
       img.alt = "";
       wrap.appendChild(img);
-      muteBtn.classList.add("hidden");
       storyDuration = IMAGE_STORY_MS;
       startProgress(index);
     }
@@ -538,12 +536,6 @@
     document.getElementById("storyCloseBtn").addEventListener("click", closeStoryViewer);
     document.getElementById("storyPrevZone").addEventListener("click", () => showStory(storyIndex - 1));
     document.getElementById("storyNextZone").addEventListener("click", () => showStory(storyIndex + 1));
-    document.getElementById("storyMuteBtn").addEventListener("click", () => {
-      storyMuted = !storyMuted;
-      const video = document.querySelector("#storyMediaWrap video");
-      if (video) video.muted = storyMuted;
-      document.getElementById("storyMuteBtn").innerHTML = storyMuted ? MUTE_ICON : UNMUTE_ICON;
-    });
     document.getElementById("avatarRing").addEventListener("click", () => openStoryViewer(0));
     document.addEventListener("keydown", (e) => {
       if (document.getElementById("storyViewer").classList.contains("hidden")) return;
@@ -551,7 +543,48 @@
       else if (e.key === "ArrowLeft") showStory(storyIndex - 1);
       else if (e.key === "ArrowRight") showStory(storyIndex + 1);
     });
+    // Belt-and-braces: if the tab/app is ever backgrounded or the page is
+    // about to unload while a story video is mid-playback, stop it rather
+    // than letting it keep running invisibly.
     window.addEventListener("pagehide", stopCurrentMedia);
+  }
+
+  // ---------- Project image lightbox ----------
+
+  function openLightbox(src, alt) {
+    if (!src) return;
+    document.getElementById("lightboxImg").src = src;
+    document.getElementById("lightboxImg").alt = alt || "";
+    document.getElementById("imageLightbox").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeLightbox() {
+    document.getElementById("imageLightbox").classList.add("hidden");
+    document.getElementById("lightboxImg").src = "";
+    document.body.style.overflow = "";
+  }
+
+  function initLightbox() {
+    // Event delegation: project cards re-render whenever the filter or view
+    // changes, so this is attached once to the document rather than to
+    // each image individually.
+    document.addEventListener("click", (e) => {
+      const imageBox = e.target.closest(".project-image");
+      if (imageBox) {
+        const img = imageBox.querySelector("img");
+        if (img) openLightbox(img.src, img.alt);
+      }
+    });
+    document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
+    document.getElementById("imageLightbox").addEventListener("click", (e) => {
+      if (e.target.id === "imageLightbox") closeLightbox();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !document.getElementById("imageLightbox").classList.contains("hidden")) {
+        closeLightbox();
+      }
+    });
   }
 
   // ---------- SEO (title only — kept lightweight) ----------
@@ -601,6 +634,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     initStoryViewerControls();
+    initLightbox();
     fetchPortfolio().then(data => {
       const profile = (data && data.profile) || {};
       currentProfile = profile;

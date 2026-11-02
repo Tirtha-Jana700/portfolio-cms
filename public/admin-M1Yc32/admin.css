@@ -190,6 +190,9 @@ body { min-height: 100vh; }
 .story-caption-overlay input::placeholder { color: rgba(255,255,255,0.75); }
 
 /* ---------- Toasts ---------- */
+/* admin.js sets className="toast success"/"toast error" — two classes, not
+   a single hyphenated one — and never adds an "in" class, so the entrance
+   has to be a plain CSS animation that runs on its own. */
 
 #toastContainer {
   position: fixed;

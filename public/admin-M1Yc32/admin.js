@@ -1,20 +1,11 @@
 (function () {
   "use strict";
 
-  // Updated api helper to include the Bearer token from localStorage
-  const api = (path, opts = {}) => {
-    const token = localStorage.getItem("admin_token") || "";
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { "Authorization": "Bearer " + token } : {}),
-      ...(opts.headers || {})
-    };
-    return fetch("/api/admin" + path, {
-      credentials: "include",
-      ...opts,
-      headers,
-    });
-  };
+  const api = (path, opts) => fetch("/api/admin" + path, {
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+  });
 
   const loginWrap = document.getElementById("loginWrap");
   const adminShell = document.getElementById("adminShell");
@@ -64,12 +55,7 @@
       const res = await api("/login", { method: "POST", body: JSON.stringify({ password }) });
       const data = await res.json();
       if (res.ok) {
-        // SAVE THE TOKEN PROPERLY HERE
-        if (data.token) {
-          localStorage.setItem("admin_token", data.token);
-        }
         document.getElementById("loginPassword").value = "";
-        errorBox.textContent = "";
         showDashboard();
       } else {
         errorBox.textContent = data.error || "Login failed";
@@ -80,10 +66,7 @@
   });
 
   document.getElementById("logoutBtn").addEventListener("click", async () => {
-    try {
-      await api("/logout", { method: "POST" });
-    } catch (e) {}
-    localStorage.removeItem("admin_token");
+    await api("/logout", { method: "POST" });
     showLogin();
   });
 
@@ -97,6 +80,9 @@
   });
 
   // ---------- Bouncy sliding indicator behind the active admin tab ----------
+  // getBoundingClientRect() on a display:none element returns all zeros, so
+  // this has to run AFTER the dashboard becomes visible, not at page load.
+
   let adminTabListenersBound = false;
   function setupAdminTabIndicator() {
     const tabsBox = document.getElementById("adminTabs");
@@ -131,7 +117,7 @@
     positionIndicator(document.querySelector(".admin-tab.active") || tabs[0]);
   }
 
-  // --- Dual Preview Helper ---
+  // --- Dual Preview Helper (Current Selected + Last Saved) ---
   function renderDualPreviews(containerId, currentUrl, savedUrl) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -301,31 +287,63 @@
           ${thumb}
           <div><strong>Story #${s.id}</strong><div style="font-size:0.8rem; color:var(--text-faint);">${escapeHtml(s.caption || "No caption")}</div></div>
         </div>
-        <button type="button" class="icon-btn btn-danger">&#10005;</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="icon-btn edit-story-btn">&#9998;</button>
+          <button type="button" class="icon-btn btn-danger del-story-btn">&#10005;</button>
+        </div>
       `;
-      row.querySelector("button").addEventListener("click", async () => {
+      row.querySelector(".edit-story-btn").addEventListener("click", () => fillStoryForm(s));
+      row.querySelector(".del-story-btn").addEventListener("click", async () => {
+        if (!confirm("Delete this story?")) return;
         await api(`/stories/${s.id}`, { method: "DELETE" });
         showToast("Story deleted", "success");
+        if (document.getElementById("storyForm").elements.namedItem("id").value === String(s.id)) {
+          clearStoryForm();
+        }
         loadStories();
       });
       listEl.appendChild(row);
     });
   }
 
+  function fillStoryForm(story) {
+    const form = document.getElementById("storyForm");
+    form.elements.namedItem("id").value = story.id;
+    form.elements.namedItem("caption").value = story.caption || "";
+    document.getElementById("storyMediaUrlInput").value = story.media_url || "";
+    renderDualPreviews("storyPreviewContainer", story.media_url, "");
+    document.getElementById("storySubmitBtn").textContent = "Update Story";
+    form.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function clearStoryForm() {
+    const form = document.getElementById("storyForm");
+    form.reset();
+    form.elements.namedItem("id").value = "";
+    document.getElementById("storyMediaUrlInput").value = "";
+    document.getElementById("storyPreviewContainer").innerHTML = "";
+    document.getElementById("storySubmitBtn").textContent = "Publish Story";
+  }
+
+  document.getElementById("storyClearBtn").addEventListener("click", clearStoryForm);
+
   document.getElementById("storyForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const media_url = document.getElementById("storyMediaUrlInput").value;
     const caption = e.target.elements.namedItem("caption").value;
+    const id = e.target.elements.namedItem("id").value;
     if (!media_url) { showToast("Please upload media first", "error"); return; }
-    const res = await api("/stories", { method: "POST", body: JSON.stringify({ media_url, caption }) });
+
+    const res = id
+      ? await api(`/stories/${id}`, { method: "PUT", body: JSON.stringify({ media_url, caption }) })
+      : await api("/stories", { method: "POST", body: JSON.stringify({ media_url, caption }) });
+
     if (res.ok) {
-      showToast("Story published successfully!", "success");
-      document.getElementById("storyForm").reset();
-      document.getElementById("storyMediaUrlInput").value = "";
-      document.getElementById("storyPreviewContainer").innerHTML = "";
+      showToast(id ? "Story updated successfully!" : "Story published successfully!", "success");
+      clearStoryForm();
       loadStories();
     } else {
-      showToast("Failed to publish story", "error");
+      showToast(id ? "Failed to update story" : "Failed to publish story", "error");
     }
   });
 
@@ -348,12 +366,6 @@
       const xhr = new XMLHttpRequest();
       xhr.open("POST", "/api/admin/upload");
       xhr.withCredentials = true;
-      
-      // Attach the Bearer token to XHR requests too!
-      const token = localStorage.getItem("admin_token");
-      if (token) {
-        xhr.setRequestHeader("Authorization", "Bearer " + token);
-      }
 
       xhr.upload.onprogress = (ev) => {
         if (ev.lengthComputable && fill) {
@@ -370,7 +382,7 @@
           if (targetId === "avatarUrlInput") renderDualPreviews(previewId, data.url, savedAvatarUrl);
           else if (targetId === "projectImageUrlInput") renderDualPreviews(previewId, data.url, savedProjectImgUrl);
           else renderDualPreviews(previewId, data.url, "");
-      showToast("Upload completed successfully!", "success");
+          showToast("Upload completed successfully!", "success");
         } else {
           let msg = "Upload failed";
           try { msg = JSON.parse(xhr.responseText).error || msg; } catch (err) {}

@@ -1,13 +1,11 @@
+
 """
-===============================================================================
-Portfolio Backend — Flask app on Cloudflare Python Workers
-===============================================================================
+Portfolio backend — Flask app running on Cloudflare Python Workers.
 """
 
 import json
 import time
 import hashlib
-import uuid
 from datetime import datetime, timezone, timedelta
 
 from flask import Flask, request, Response, jsonify
@@ -17,11 +15,9 @@ from workers import wsgi
 
 app = Flask(__name__)
 
-SESSION_MAX_AGE = 60 * 60 * 24  # 24 hours
+SESSION_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
+ADMIN_COOKIE = "session_token"
 
-# -----------------------------------------------------------------------------
-# Cloudflare D1 & Environment Helpers
-# -----------------------------------------------------------------------------
 def env():
     return request.environ["workers.env"]
 
@@ -57,25 +53,24 @@ def d1_run(sql, params=None):
     return to_py(run_sync(stmt.run()))
 
 def now_iso():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).isoformat()
 
-# -----------------------------------------------------------------------------
-# Authentication (Bearer Token via itsdangerous)
-# -----------------------------------------------------------------------------
-def get_admin_secret():
-    secret = getattr(env(), "ADMIN_PASSWORD", None)
-    if secret and str(secret).strip():
-        return str(secret).strip()
-    return "admin123"  # Fallback for local testing
+def custom_check_password(stored_hash, password):
+    try:
+        salt, pwd_hash = stored_hash.split("$")
+        computed = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+        return computed == pwd_hash
+    except Exception:
+        return False
 
 def serializer():
-    return URLSafeTimedSerializer(get_admin_secret())
+    secret = getattr(env(), "SESSION_SECRET", None) or "dev-insecure-secret-change-me"
+    return URLSafeTimedSerializer(secret)
 
 def is_authenticated():
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
+    token = request.cookies.get(ADMIN_COOKIE)
+    if not token:
         return False
-    token = auth_header.split(" ", 1)[1].strip()
     try:
         data = serializer().loads(token, max_age=SESSION_MAX_AGE)
         return data.get("adm") is True
@@ -84,43 +79,49 @@ def is_authenticated():
 
 def admin_required(fn):
     def wrapper(*args, **kwargs):
-        if request.method == "OPTIONS":
-            return jsonify({"ok": True}), 200
         if not is_authenticated():
             return jsonify({"error": "Not authenticated"}), 401
         return fn(*args, **kwargs)
     wrapper.__name__ = fn.__name__
     return wrapper
 
+def cookie_is_secure():
+    host = request.host.split(":")[0]
+    return host not in ("localhost", "127.0.0.1")
+
 @app.post("/api/admin/login")
 def admin_login():
     body = request.get_json(silent=True) or {}
     password = body.get("password", "")
-    secret = get_admin_secret()
-    
-    if password == secret:
-        token = serializer().dumps({"adm": True})
-        return jsonify({"ok": True, "token": token})
-    return jsonify({"error": "Incorrect password"}), 401
+    stored_hash = getattr(env(), "ADMIN_PASSWORD_HASH", None)
+    if not stored_hash:
+        return jsonify({"error": "Admin password not configured."}), 500
+    if not password or not custom_check_password(stored_hash, password):
+        return jsonify({"error": "Incorrect password"}), 401
+    token = serializer().dumps({"adm": True})
+    resp = jsonify({"ok": True})
+    resp.set_cookie(ADMIN_COOKIE, token, max_age=SESSION_MAX_AGE, httponly=True, secure=cookie_is_secure(), samesite="Strict", path="/api/admin")
+    return resp
 
 @app.post("/api/admin/logout")
 def admin_logout():
-    return jsonify({"ok": True})
+    resp = jsonify({"ok": True})
+    resp.delete_cookie(ADMIN_COOKIE, path="/api/admin")
+    return resp
 
-# -----------------------------------------------------------------------------
-# 1. Public Portfolio Endpoint
-# -----------------------------------------------------------------------------
+@app.get("/api/admin/session")
+def admin_session():
+    return jsonify({"authenticated": is_authenticated()})
+
 @app.get("/api/portfolio")
 def get_portfolio():
     profile = d1_first("SELECT * FROM profile WHERE id = 1") or {}
     skills = d1_all("SELECT * FROM skills ORDER BY sort_order ASC, id ASC")
-    projects = d1_all("SELECT * FROM projects ORDER BY starred DESC, sort_order ASC, id DESC")
+    projects = d1_all("SELECT * FROM projects ORDER BY sort_order ASC, id DESC")
     experience = d1_all("SELECT * FROM experience ORDER BY sort_order ASC, id ASC")
     
-    # 24-Hour Story Filtering
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    d1_run("DELETE FROM stories WHERE created_at < ?", [cutoff])
-    stories = d1_all("SELECT * FROM stories WHERE created_at >= ? ORDER BY created_at ASC", [cutoff])
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    stories = d1_all("SELECT * FROM stories WHERE created_at >= ? ORDER BY id ASC", [cutoff])
 
     return jsonify({
         "profile": profile,
@@ -130,12 +131,9 @@ def get_portfolio():
         "stories": stories,
     })
 
-# -----------------------------------------------------------------------------
-# 2. Admin Profile CRUD
-# -----------------------------------------------------------------------------
 PROFILE_FIELDS = [
     "full_name", "title", "tagline", "bio", "avatar_url", "resume_url",
-    "email", "phone", "location", "github_url", "linkedin_url",
+    "email", "location", "github_url", "linkedin_url",
     "twitter_url", "instagram_url", "youtube_url",
 ]
 
@@ -153,11 +151,8 @@ def update_profile():
     sets.append("updated_at = ?")
     params.append(now_iso())
     d1_run(f"UPDATE profile SET {', '.join(sets)} WHERE id = 1", params)
-    return jsonify({"ok": True})
+    return jsonify(d1_first("SELECT * FROM profile WHERE id = 1"))
 
-# -----------------------------------------------------------------------------
-# 3. Dynamic Admin CRUD Factory
-# -----------------------------------------------------------------------------
 def make_crud(table, allowed_fields, required_field, order_sql):
     def list_items():
         return jsonify(d1_all(f"SELECT * FROM {table} ORDER BY {order_sql}"))
@@ -167,18 +162,17 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         body = request.get_json(silent=True) or {}
         if not body.get(required_field):
             return jsonify({"error": f"'{required_field}' is required"}), 400
-        
         fields = [f for f in allowed_fields if f in body]
         if table == "projects":
             fields.append("created_at")
+            body = dict(body)
             body["created_at"] = now_iso()
-            
         cols = ", ".join(fields)
         placeholders = ", ".join(["?"] * len(fields))
         params = [body.get(f) for f in fields]
-        
         d1_run(f"INSERT INTO {table} ({cols}) VALUES ({placeholders})", params)
-        return jsonify({"ok": True}), 201
+        row = d1_first(f"SELECT * FROM {table} ORDER BY id DESC LIMIT 1")
+        return jsonify(row), 201
     create_item.__name__ = f"{table}_create_item"
 
     def update_item(item_id):
@@ -186,12 +180,13 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         fields = [f for f in allowed_fields if f in body]
         if not fields:
             return jsonify({"error": "No fields provided"}), 400
-            
         sets = ", ".join(f"{f} = ?" for f in fields)
         params = [body.get(f) for f in fields] + [item_id]
-        
         d1_run(f"UPDATE {table} SET {sets} WHERE id = ?", params)
-        return jsonify({"ok": True})
+        row = d1_first(f"SELECT * FROM {table} WHERE id = ?", [item_id])
+        if row is None:
+            return jsonify({"error": "Not found"}), 404
+        return jsonify(row)
     update_item.__name__ = f"{table}_update_item"
 
     def delete_item(item_id):
@@ -206,7 +201,6 @@ def make_crud(table, allowed_fields, required_field, order_sql):
         admin_required(delete_item),
     )
 
-# Map CRUD routes
 skills_list, skills_create, skills_update, skills_delete = make_crud(
     "skills", ["name", "category", "level", "sort_order"], "name", "sort_order ASC, id ASC"
 )
@@ -218,7 +212,7 @@ app.delete("/api/admin/skills/<int:item_id>")(skills_delete)
 projects_list, projects_create, projects_update, projects_delete = make_crud(
     "projects",
     ["title", "description", "image_url", "tech_stack", "live_url", "repo_url", "starred", "sort_order"],
-    "title", "starred DESC, sort_order ASC",
+    "title", "sort_order ASC, id DESC",
 )
 app.get("/api/admin/projects")(projects_list)
 app.post("/api/admin/projects")(projects_create)
@@ -235,9 +229,11 @@ app.post("/api/admin/experience")(experience_create)
 app.put("/api/admin/experience/<int:item_id>")(experience_update)
 app.delete("/api/admin/experience/<int:item_id>")(experience_delete)
 
-# -----------------------------------------------------------------------------
-# 4. Stories & Media Uploads (R2)
-# -----------------------------------------------------------------------------
+@app.get("/api/admin/stories")
+@admin_required
+def admin_get_stories():
+    return jsonify(d1_all("SELECT * FROM stories ORDER BY id DESC"))
+
 @app.post("/api/admin/stories")
 @admin_required
 def admin_create_story():
@@ -247,7 +243,28 @@ def admin_create_story():
     if not media_url:
         return jsonify({"error": "media_url is required"}), 400
     d1_run("INSERT INTO stories (media_url, caption, created_at) VALUES (?, ?, ?)", [media_url, caption, now_iso()])
-    return jsonify({"ok": True}), 201
+    row = d1_first("SELECT * FROM stories ORDER BY id DESC LIMIT 1")
+    return jsonify(row), 201
+
+@app.put("/api/admin/stories/<int:story_id>")
+@admin_required
+def admin_update_story(story_id):
+    body = request.get_json(silent=True) or {}
+    sets, params = [], []
+    for field in ["media_url", "caption"]:
+        if field in body:
+            sets.append(f"{field} = ?")
+            params.append(body[field])
+    if not sets:
+        return jsonify({"error": "No fields provided"}), 400
+    # Editing a story on purpose doesn't reset its 24-hour clock — that's
+    # still based on created_at, untouched here.
+    params.append(story_id)
+    d1_run(f"UPDATE stories SET {', '.join(sets)} WHERE id = ?", params)
+    row = d1_first("SELECT * FROM stories WHERE id = ?", [story_id])
+    if row is None:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(row)
 
 @app.delete("/api/admin/stories/<int:story_id>")
 @admin_required
@@ -257,7 +274,7 @@ def admin_delete_story(story_id):
 
 def get_bucket():
     e = env()
-    return getattr(e, "MEDIA", None) or getattr(e, "BUCKET", None)
+    return getattr(e, "BUCKET", None) or getattr(e, "MEDIA", None)
 
 @app.post("/api/admin/upload")
 @admin_required
@@ -269,6 +286,7 @@ def upload_image():
     if not file:
         return jsonify({"error": "No file provided"}), 400
     try:
+        import uuid
         ext = ""
         if "." in file.filename:
             ext = "." + file.filename.rsplit(".", 1)[1].lower()
@@ -292,7 +310,6 @@ def serve_media(key):
             body = bytes(run_sync(obj.arrayBuffer()))
         except Exception:
             body = run_sync(obj.bytes())
-        
         content_type = "application/octet-stream"
         try:
             http_meta = to_py(obj.httpMetadata)
@@ -304,16 +321,6 @@ def serve_media(key):
     except Exception as e:
         return Response(f"Error serving media: {str(e)}", status=500)
 
-# -----------------------------------------------------------------------------
-# 5. Static Asset Serving & App Entrypoint
-# -----------------------------------------------------------------------------
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    return response
-
 @app.get("/")
 @app.get("/<path:path>")
 def frontend(path=""):
@@ -322,5 +329,5 @@ def frontend(path=""):
     body = run_sync(asset_response.bytes())
     return Response(body, status=asset_response.status, headers=asset_response.headers)
 
-# Resolves Code 10030 by correctly binding the WSGI app for pywrangler
 Default = wsgi.entrypoint(app)
+

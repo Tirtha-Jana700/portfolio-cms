@@ -1,22 +1,25 @@
 """
-Run this once on your own machine (Termux works fine) to turn your chosen
-admin password into a hash. You never store the real password anywhere —
-only this hash, as the ADMIN_PASSWORD_HASH secret.
+Run this locally (Termux is fine) to generate a new admin password hash,
+in the exact format your worker.py's custom_check_password expects:
+  <salt>$<sha256(salt + password)>
 
 Usage:
-    pip install werkzeug --break-system-packages   # if not already installed
     python scripts/generate_password_hash.py
 """
 import getpass
-from werkzeug.security import generate_password_hash
+import hashlib
+import os
 
-password = getpass.getpass("Choose your admin password: ")
+password = getpass.getpass("New admin password: ")
 confirm = getpass.getpass("Type it again to confirm: ")
 
 if password != confirm:
     print("Passwords didn't match — try again.")
 else:
-    print("\nYour password hash (copy the whole line below):\n")
-    print(generate_password_hash(password))
-    print("\nSet it with:\n  wrangler secret put ADMIN_PASSWORD_HASH\n"
-          "(paste the hash above when it asks for the value)")
+    salt = os.urandom(16).hex()
+    pwd_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+    stored = f"{salt}${pwd_hash}"
+    print("\nYour new password hash (copy the whole line below):\n")
+    print(stored)
+    print("\nUpdate it in the Cloudflare dashboard:")
+    print("  your Worker -> Settings -> Variables and Secrets -> ADMIN_PASSWORD_HASH -> Edit")

@@ -1,4 +1,4 @@
-name = "portfolio"
+name = "portfolio-cms"
 main = "src/worker.py"
 compatibility_date = "2026-10-25"
 compatibility_flags = ["python_workers"]
